@@ -17,13 +17,28 @@ CRTColor convertDirectionToColor(const CRTVector& direction) {
     return { colorR, colorG, colorB };
 }
 
+CRTColor convertDirectionToColorAbsValue(const CRTVector& direction) {
+    // direction components are floats in the range [-1.0, 1.0], because it's been normalized
+
+    // we convert them to be in the range [0.0, 1.0] by absolute value
+    float normal_x = abs(direction.x);
+    float normal_y = abs(direction.y);
+    float normal_z = abs(direction.z);
+
+    short colorR = normal_x * MAX_COLOR_COMPONENT;
+    short colorG = normal_y * MAX_COLOR_COMPONENT;
+    short colorB = normal_z * MAX_COLOR_COMPONENT;
+
+    return { colorR, colorG, colorB };
+}
+
 void generateImageByRays(CRTImage& image, std::vector<std::vector<CRTRay>> pixelRays) {
     unsigned imageHeight = image.size();
     unsigned imageWidth = image[0].size();
 
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            image[rowId][colId] = convertDirectionToColor(pixelRays[rowId][colId].getDirection());
+            image[rowId][colId] = convertDirectionToColorAbsValue(pixelRays[rowId][colId].getDirection());
         }
     }
 }
