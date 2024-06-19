@@ -1,15 +1,15 @@
 #pragma once
 #include "CRTVector.h"
 
-const int N = 3;
-const int M = 3;
+const int MATRIX_ROWS = 3;
+const int MATRIX_COLUMNS = 3;
 
 class CRTMatrix
 {
 	float matrix[3][3];
 public:
 	CRTMatrix();
-	CRTMatrix(const float m[N][M]);
+	CRTMatrix(const float m[MATRIX_ROWS][MATRIX_COLUMNS]);
 
 	CRTMatrix& operator*=(const CRTMatrix& other);
 	CRTMatrix& operator+=(const CRTMatrix& other);

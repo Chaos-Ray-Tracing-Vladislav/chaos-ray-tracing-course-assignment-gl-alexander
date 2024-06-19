@@ -14,8 +14,8 @@ class CRTRenderer
 {
 	const CRTScene* scene;
 
-	CRTDistanceScene sortScene(const std::vector<CRTTriangle>& triangles) const;
 	std::vector<CRTTriangle> convertMeshesToTriangles() const;
+	float getMaxDistanceToCamera(const std::vector<CRTTriangle>& triangles) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 

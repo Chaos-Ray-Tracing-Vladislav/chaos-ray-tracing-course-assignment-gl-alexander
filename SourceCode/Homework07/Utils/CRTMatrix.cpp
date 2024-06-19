@@ -3,17 +3,17 @@
 
 const float PI = 3.1415;
 
-CRTMatrix::CRTMatrix(const float matrix[N][M]) {
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < M; j++) {
+CRTMatrix::CRTMatrix(const float matrix[MATRIX_ROWS][MATRIX_COLUMNS]) {
+	for (int i = 0; i < MATRIX_ROWS; i++) {
+		for (int j = 0; j < MATRIX_COLUMNS; j++) {
 			this->matrix[i][j] = matrix[i][j];
 		}
 	}
 }
 
 CRTMatrix::CRTMatrix() {
-	for (int i = 0; i < N; i++) {
-		for (int j = 0; j < M; j++) {
+	for (int i = 0; i < MATRIX_ROWS; i++) {
+		for (int j = 0; j < MATRIX_COLUMNS; j++) {
 			this->matrix[i][j] = 0;
 		}
 	}
@@ -24,16 +24,16 @@ CRTMatrix& CRTMatrix::operator*=(const CRTMatrix& other) {
 	return *this;
 }
 CRTMatrix& CRTMatrix::operator+=(const CRTMatrix& other) {
-	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < M; ++j) {
+	for (int i = 0; i < MATRIX_ROWS; ++i) {
+		for (int j = 0; j < MATRIX_COLUMNS; ++j) {
 			matrix[i][j] += other.matrix[i][j];
 		}
 	}
 	return *this;
 }
 CRTMatrix& CRTMatrix::operator-=(const CRTMatrix& other) {
-	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < M; ++j) {
+	for (int i = 0; i < MATRIX_ROWS; ++i) {
+		for (int j = 0; j < MATRIX_COLUMNS; ++j) {
 			matrix[i][j] -= other.matrix[i][j];
 		}
 	}
@@ -42,10 +42,10 @@ CRTMatrix& CRTMatrix::operator-=(const CRTMatrix& other) {
 
 CRTMatrix operator*(const CRTMatrix& lhs, const CRTMatrix& rhs) {
 	CRTMatrix result;
-	for (int i = 0; i < N; ++i) {
-		for (int j = 0; j < N; ++j) {
+	for (int i = 0; i < MATRIX_ROWS; ++i) {
+		for (int j = 0; j < MATRIX_ROWS; ++j) {
 			result.matrix[i][j] = 0.0f;
-			for (int k = 0; k < N; ++k) {
+			for (int k = 0; k < MATRIX_ROWS; ++k) {
 				result.matrix[i][j] += lhs.matrix[i][k] * rhs.matrix[k][j];
 			}
 		}

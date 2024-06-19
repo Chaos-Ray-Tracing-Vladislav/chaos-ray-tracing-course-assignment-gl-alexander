@@ -15,7 +15,6 @@ class CRTCamera
 	unsigned imageWidth;
 	unsigned imageHeight;
 
-	CRTRay getRayForPixel(unsigned rowId, unsigned colId) const;
 public:
 	CRTCamera();
 	CRTCamera(const CRTVector& position);
@@ -28,7 +27,7 @@ public:
 	void setRotation(const CRTMatrix& matrix);
 	void setImageSettings(unsigned width, unsigned height);
 
-	CRTRayMatrix generateRays() const;
+	CRTRay getRayForPixel(unsigned rowId, unsigned colId) const;
 
 	void moveCamera(const CRTVector& position);
 	void dolly(float distance);

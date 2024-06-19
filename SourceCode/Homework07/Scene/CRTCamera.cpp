@@ -6,8 +6,8 @@
 
 static const CRTVector cameraOffsetFromImage(0, 0, -1);
 static const float PIXEL_LENGTH = 1.0f;
-static const float DEFAULT_ROTATION[N][M] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
-static const float DEFAULT_POSITION[N] = { 0.0f, 0.0f, 0.0f };
+static const float DEFAULT_ROTATION[MATRIX_ROWS][MATRIX_COLUMNS] = {{1.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f}, {0.0f, 0.0f, 1.0f}};
+static const float DEFAULT_POSITION[MATRIX_ROWS] = { 0.0f, 0.0f, 0.0f };
 
 CRTCamera::CRTCamera() : CRTCamera(DEFAULT_POSITION, DEFAULT_ROTATION)
 {}
@@ -71,19 +71,6 @@ CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
 
 	direction.normalize();
 	return CRTRay(this->position, direction);
-}
-
-
-CRTRayMatrix CRTCamera::generateRays() const {
-	std::vector<std::vector<CRTRay>> rayArray;
-	rayArray.assign(imageHeight, std::vector<CRTRay>(imageWidth));
-
-	for (int i = 0; i < imageHeight; i++) {
-		for (int j = 0; j < imageWidth; j++) {
-			rayArray[i][j] = getRayForPixel(i, j);
-		}
-	}
-	return rayArray;
 }
 
 void CRTCamera::moveCamera(const CRTVector& position) {

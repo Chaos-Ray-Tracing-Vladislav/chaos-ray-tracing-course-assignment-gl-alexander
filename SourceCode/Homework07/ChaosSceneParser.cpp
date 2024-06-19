@@ -3,7 +3,7 @@
 
 int main()
 {
-	CRTScene scene("scene4.crtscene");
+	CRTScene scene("scene2.crtscene");
 	CRTRenderer renderer(&scene);
-	renderer.renderScene("scene4_output.ppm");
+	renderer.renderScene("scene2_output.ppm");
 }

@@ -43,10 +43,6 @@ const CRTVector& CRTTriangle::getNormal() const {
 }
 
 
-const CRTVector* CRTTriangle::getVertices() const {
-	return vertices;
-}
-
 const CRTColor& CRTTriangle::getColor() const {
 	return color;
 }
@@ -77,4 +73,30 @@ bool CRTTriangle::pointInTriangle(const CRTVector& point) const {
 	// all the cross products need to be oriented the same way as the normal vector
 
 	return  dot(normal, relativeE0) >= 0 && dot(normal, relativeE1) >= 0 && dot(normal, relativeE2) >= 0;
+}
+
+std::pair<bool, CRTVector> CRTTriangle::intersectsRay(const CRTRay& ray) const
+{
+	float dotPr = dot(normal, ray.getDirection());
+	if (dotPr >= 0) {
+		// Ray is parallel to the plane or facing away from the triangle
+		return { false, CRTVector() };
+	}
+
+	// Calculate the signed distance from the ray origin to the plane
+	float distanceToPlane = -(dot(normal, ray.getOrigin() - vertices[0])) / dotPr;
+
+	if (distanceToPlane < 0) {
+		// The intersection is behind the ray origin
+		return { false, CRTVector() };
+	}
+
+	// Compute the hit point
+	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection()  * distanceToPlane);
+
+	if (pointInTriangle(hitPoint)) {
+		return { true, hitPoint };
+	}
+
+	return { false, hitPoint };
 }
