@@ -17,8 +17,8 @@ int main()
 	CRTVector subTask1 = cross(CRTVector(3.5, 0, 0), CRTVector(1.75, 3.5, 0));
 	CRTVector subTask2 = cross(CRTVector(3, -3, 1), CRTVector(4, 9, 3));
 
-	float subTask3 = abs(scalar(CRTVector(3, -3, 1), CRTVector(4, 9, 3)));
-	float subTask4= abs(scalar(CRTVector(3, -3, 1), CRTVector(-12, 12, -4)));
+	float subTask3 = cross(CRTVector(3, -3, 1), CRTVector(4, 9, 3)).length();
+	float subTask4= cross(CRTVector(3, -3, 1), CRTVector(-12, 12, -4)).length();
 
 	// Task 3
 	CRTTriangle t1({
