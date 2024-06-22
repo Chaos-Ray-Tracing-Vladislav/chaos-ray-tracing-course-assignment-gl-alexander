@@ -17,12 +17,14 @@ float CRTVector::length() const {
 
 void CRTVector::normalize() {
 	float originalLength = length();
-	if (std::abs(originalLength - 1) <= EPSILON || originalLength <= EPSILON) {		// doesn't normalize already normalized vectors, as well as the 0 length vector
+	float multiplication = 1.0f / length();
+	if (std::abs(originalLength - 1) <= EPSILON || originalLength <= EPSILON) {		
+		// doesn't normalize already normalized vectors, as well as the 0 length vector
 		return;
 	}
-	x /= originalLength;
-	y /= originalLength;
-	z /= originalLength;
+	x *= multiplication;
+	y *= multiplication;
+	z *= multiplication;
 }
 
 CRTVector& CRTVector::operator+=(const CRTVector& rhs) {

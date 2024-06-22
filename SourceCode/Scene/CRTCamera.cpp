@@ -68,8 +68,8 @@ CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
 	direction += cameraOffsetFromImage; // since vec.-matrix multiplication is distributive, so we can add the offset to the pixel direction
 	// and rotate it afterwards
 	direction = direction * this->rotation;
-
 	direction.normalize();
+
 	return CRTRay(this->position, direction);
 }
 

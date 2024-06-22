@@ -39,6 +39,10 @@ const CRTSettings& CRTScene::getSettings() const
 	return settings;
 }
 
+const std::vector<CRTLight>& CRTScene::getLights() const {
+	return lights;
+}
+
 static Document getJsonDocument(const char* filename) {
 	std::ifstream ifs(filename);
 	if (!ifs.is_open())
@@ -67,9 +71,9 @@ static CRTMatrix loadMatrix(const Value::ConstArray& arr) {
 	assert(arr.Size() == 9);
 	float matrix[3][3] = {
 		{
-			static_cast<float>(arr[0].GetDouble()),
-			static_cast<float>(arr[1].GetDouble()),
-			static_cast<float>(arr[2].GetDouble())
+			arr[0].GetDouble(),
+			arr[1].GetDouble(),
+			arr[2].GetDouble()
 		},
 		{
 			static_cast<float>(arr[3].GetDouble()),
@@ -83,6 +87,27 @@ static CRTMatrix loadMatrix(const Value::ConstArray& arr) {
 		}
 	};
 	return CRTMatrix(matrix);
+}
+
+static CRTLight loadLight(const Value::ConstObject& lightVal) {
+	const Value& intensityVal = lightVal.FindMember(crtSceneLightIntensity)->value;
+	assert(!intensityVal.IsNull() && intensityVal.IsNumber());
+	float intensityResult = intensityVal.GetDouble();
+	const Value& positionVal = lightVal.FindMember(crtSceneLightPosition)->value;
+	assert(!positionVal.IsNull() && positionVal.IsArray());
+	return CRTLight(loadVector(positionVal.GetArray()), intensityResult);
+}
+
+void CRTScene::parseLights(const rapidjson::Document& doc) {
+	const Value& lightsVal = doc.FindMember(crtSceneLights)->value;
+	if (!lightsVal.IsNull() && lightsVal.IsArray()) {
+		int numLights = lightsVal.GetArray().Size();
+		assert( numLights > 0);
+		for (int i = 0; i < numLights; i++) {
+			assert(!lightsVal.GetArray()[i].IsNull() && lightsVal.GetArray()[i].IsObject());
+			lights.push_back(loadLight(lightsVal.GetArray()[i].GetObject()));
+		}
+	}
 }
 
 void CRTScene::parseSettings(const Document& doc) {
@@ -171,4 +196,5 @@ void CRTScene::parseSceneFile(const char* filename)
 	Document doc = getJsonDocument(filename);
 	parseSettings(doc);
 	parseObjects(doc);
+	parseLights(doc);
 }

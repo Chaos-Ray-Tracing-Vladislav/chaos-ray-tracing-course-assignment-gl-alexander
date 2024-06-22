@@ -1,6 +1,8 @@
 #pragma once
 #include <vector>
+#include <tuple>
 #include "../Utils/CRTTriangle.h"
+#include "../Utils/CRTRay.h"
 
 class CRTMesh
 {
@@ -9,6 +11,7 @@ class CRTMesh
 public:
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices);
 
-	std::vector<CRTTriangle> getTriangles() const;
+	std::tuple<bool, CRTVector, CRTTriangle> intersectsRay(const CRTRay& ray) const;
+	bool intersectsShadowRay(const CRTRay& ray) const;
 };
 

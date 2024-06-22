@@ -31,4 +31,5 @@ public:
 
 	bool pointInTriangle(const CRTVector& point) const;
 	std::pair<bool, CRTVector> intersectsRay(const CRTRay& ray) const;
+	bool intersectsShadowRay(const CRTRay& ray) const;
 };

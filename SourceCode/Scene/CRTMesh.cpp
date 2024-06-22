@@ -4,16 +4,39 @@ CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>&
     vertices(vertices), triangleVertIndices(triangleVertIndices)
 {}
 
-std::vector<CRTTriangle> CRTMesh::getTriangles() const
+std::tuple<bool, CRTVector, CRTTriangle> CRTMesh::intersectsRay(const CRTRay& ray) const
 {
-    std::vector<CRTTriangle> result;
-    size_t trianglesCount = triangleVertIndices.size() / VERTICES;
-    for (int i = 0; i < trianglesCount; i++) {
-        size_t start = i * VERTICES;
-        result.push_back(CRTTriangle(vertices[triangleVertIndices[start + 0]],
-            vertices[triangleVertIndices[start + 1]],
-            vertices[triangleVertIndices[start + 2]]
-        ));
+    float closestHitDitance = FLT_MAX;
+    CRTVector hitPoint;
+    CRTTriangle hitTriangle;
+    bool isHit = false;
+    for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
+        CRTTriangle triangle(vertices[triangleVertIndices[i + 0]],
+            vertices[triangleVertIndices[i + 1]],
+            vertices[triangleVertIndices[i + 2]]);
+        std::pair<bool, CRTVector> hit = triangle.intersectsRay(ray);
+        if (hit.first) {
+            isHit = true;
+            float distance = triangle.distanceToPoint(ray.getOrigin());
+            if (distance < closestHitDitance) {
+                closestHitDitance = distance;
+                hitPoint = hit.second;
+                hitTriangle = triangle;
+            }
+        }
     }
-    return result;
+    return std::make_tuple(isHit, hitPoint, hitTriangle);
+}
+
+bool CRTMesh::intersectsShadowRay(const CRTRay& ray) const
+{
+    for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
+        CRTTriangle triangle(vertices[triangleVertIndices[i + 0]],
+            vertices[triangleVertIndices[i + 1]],
+            vertices[triangleVertIndices[i + 2]]);
+        if (triangle.intersectsShadowRay(ray)) {
+            return true;
+        }
+    }
+    return false;
 }
