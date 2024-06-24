@@ -57,7 +57,7 @@ CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
 	y_coordinate = 1.0 - (2.0 * y_coordinate);
 
 	// Consider the aspect ratio
-	x_coordinate *= imageWidth / imageHeight;
+	x_coordinate *= (float)imageWidth / (float)imageHeight;
 
 	// Account for the desired pixel length
 	x_coordinate *= PIXEL_LENGTH;
