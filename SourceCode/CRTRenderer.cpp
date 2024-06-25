@@ -68,7 +68,10 @@ CRTColor CRTRenderer::rayTrace(const CRTRay& ray, int depth, const CRTVector& ad
         }
     }
     else {
-        return scene->getSettings().bgColor;
+        return {
+            (short)(addedAlbedo.x * scene->getSettings().bgColor.r),
+            (short)(addedAlbedo.y * scene->getSettings().bgColor.g),
+            (short)(addedAlbedo.z * scene->getSettings().bgColor.b) };
     }
 }
 

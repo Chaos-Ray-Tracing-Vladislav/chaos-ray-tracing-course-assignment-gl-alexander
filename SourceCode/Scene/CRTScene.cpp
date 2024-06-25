@@ -115,7 +115,7 @@ void CRTScene::parseSettings(const Document& doc) {
 	if (!settingsVal.IsNull() && settingsVal.IsObject()) {
 		const Value& bgColorValue = settingsVal.FindMember(crtSceneBGColor)->value;
 		assert(!bgColorValue.IsNull() && bgColorValue.IsArray());
-		CRTVector colorVec = loadVector(bgColorValue.GetArray());
+		CRTVector colorVec = loadVector(bgColorValue.GetArray()) * MAX_COLOR_COMPONENT;
 		settings.bgColor = { (short)colorVec.x, (short)colorVec.y, (short)colorVec.z };
 
 		const Value& imageSettingsVal = settingsVal.FindMember(crtSceneImageSettings)->value;
