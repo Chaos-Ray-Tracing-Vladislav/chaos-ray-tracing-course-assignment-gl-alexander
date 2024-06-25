@@ -57,7 +57,7 @@ static Document getJsonDocument(const char* filename) {
 	return doc;
 }
 
-static CRTVector loadVector(const Value::ConstArray& arr) {
+CRTVector CRTScene::loadVector(const Value::ConstArray& arr) const {
 	assert(arr.Size() == 3);
 	CRTVector vec{
 		static_cast<float>(arr[0].GetDouble()),
@@ -67,7 +67,7 @@ static CRTVector loadVector(const Value::ConstArray& arr) {
 	return vec;
 }
 
-static CRTMatrix loadMatrix(const Value::ConstArray& arr) {
+CRTMatrix CRTScene::loadMatrix(const Value::ConstArray& arr) const {
 	assert(arr.Size() == 9);
 	float matrix[3][3] = {
 		{
@@ -89,7 +89,7 @@ static CRTMatrix loadMatrix(const Value::ConstArray& arr) {
 	return CRTMatrix(matrix);
 }
 
-static CRTLight loadLight(const Value::ConstObject& lightVal) {
+CRTLight CRTScene::loadLight(const Value::ConstObject& lightVal) const {
 	const Value& intensityVal = lightVal.FindMember(crtSceneLightIntensity)->value;
 	assert(!intensityVal.IsNull() && intensityVal.IsNumber());
 	float intensityResult = intensityVal.GetDouble();
@@ -143,7 +143,7 @@ void CRTScene::parseSettings(const Document& doc) {
 	}
 }
 
-static std::vector<CRTVector> loadVertices(const Value::ConstArray& arr) {
+std::vector<CRTVector> CRTScene::loadVertices(const Value::ConstArray& arr) const {
 	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
 	std::vector<CRTVector> result;
 	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
@@ -159,7 +159,7 @@ static std::vector<CRTVector> loadVertices(const Value::ConstArray& arr) {
 	return result;
 }
 
-static std::vector<int> loadTriangleIndices(const Value::ConstArray& arr) {
+std::vector<int> CRTScene::loadTriangleIndices(const Value::ConstArray& arr) const {
 	assert(arr.Size() % VERTICES == 0);
 
 	std::vector<int> result;
@@ -169,13 +169,20 @@ static std::vector<int> loadTriangleIndices(const Value::ConstArray& arr) {
 	return result;
 }
 
-static CRTMesh loadMesh(const Value::ConstObject& meshVal) {
+CRTMesh CRTScene::loadMesh(const Value::ConstObject& meshVal) const {
 	const Value & meshVertices = meshVal.FindMember(crtSceneVertices)->value;
 	assert(!meshVertices.IsNull() && meshVertices.IsArray());
 	const Value& triangleVal = meshVal.FindMember(crtSceneTriangles)->value;
 	assert(!triangleVal.IsNull() && triangleVal.IsArray());
+	const Value& materialIndexVal = meshVal.FindMember(crtSceneMeshMaterialIndex)->value;
+	if (!materialIndexVal.IsNull() && materialIndexVal.IsInt()) {
+		CRTMaterial material = materials[materialIndexVal.GetInt()];
+		return CRTMesh(loadVertices(meshVertices.GetArray()),
+			loadTriangleIndices(triangleVal.GetArray()),
+			material);
 
-	return CRTMesh(loadVertices(meshVertices.GetArray()), 
+	}
+	return CRTMesh(loadVertices(meshVertices.GetArray()),
 		loadTriangleIndices(triangleVal.GetArray()));
 }
 
@@ -190,11 +197,47 @@ void CRTScene::parseObjects(const Document& doc) {
 	}
 }
 
+CRTMaterial CRTScene::loadMaterial(const Value::ConstObject& matVal) const {
+	const Value& typeVal = matVal.FindMember(crtSceneMeshMaterialType)->value;
+	assert(!typeVal.IsNull() && typeVal.IsString());
+	const char* typeAsString = typeVal.GetString();
+	CRTMaterialType type = CRTMaterialType::DIFFUSE;
+	if (strcmp(typeAsString, crtSceneMeshMaterialDiffuse) == 0) {
+		type = CRTMaterialType::DIFFUSE;
+	}
+	else if (strcmp(typeAsString, crtSceneMeshMaterialReflective) == 0) {
+		type = CRTMaterialType::REFLECTIVE;
+	}
+	else {
+		throw std::logic_error("material type unknown");
+	}
+	
+	const Value& albedoVal = matVal.FindMember(crtSceneMeshMaterialAlbedo)->value;
+	assert(!albedoVal.IsNull() && albedoVal.IsArray());
+	CRTVector albedo = loadVector(albedoVal.GetArray());
+
+	const Value& shadingVal = matVal.FindMember(crtSceneMeshMaterialSmoothShading)->value;
+	assert(!shadingVal.IsNull() && shadingVal.IsBool());
+	return { type, albedo, shadingVal.GetBool() };
+}
+void CRTScene::parseMaterials(const rapidjson::Document& doc)
+{
+	const Value& materialsVal = doc.FindMember(crtSceneMeshMaterials)->value;
+	if (!materialsVal.IsNull() && materialsVal.IsArray()) {
+		size_t materialsCount = materialsVal.GetArray().Size();
+		for (int i = 0; i < materialsCount; i++) {
+			assert(!materialsVal.GetArray()[i].IsNull() && materialsVal.GetArray()[i].IsObject());
+			materials.push_back(loadMaterial(materialsVal.GetArray()[i].GetObject()));
+		}
+	}
+}
+
 
 void CRTScene::parseSceneFile(const char* filename)
 {
 	Document doc = getJsonDocument(filename);
 	parseSettings(doc);
-	parseObjects(doc);
 	parseLights(doc);
+	parseMaterials(doc);
+	parseObjects(doc); // important to parse the materials first
 }

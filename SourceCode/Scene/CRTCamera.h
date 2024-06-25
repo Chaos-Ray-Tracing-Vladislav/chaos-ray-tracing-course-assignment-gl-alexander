@@ -4,9 +4,6 @@
 #include "../Utils/CRTVector.h"
 #include "../Utils/CRTRay.h"
 
-using CRTRayMatrix = std::vector<std::vector<CRTRay>>;
-
-
 class CRTCamera
 {
 	CRTVector position;
