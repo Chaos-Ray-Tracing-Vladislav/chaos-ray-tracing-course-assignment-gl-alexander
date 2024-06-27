@@ -12,8 +12,7 @@ typedef CRTColor (*VisualizationFunction)(const CRTVector&, const CRTVector&);
 constexpr float MAX_RENDER_DISTANCE = 10.0f;
 constexpr int REFLECTION_DEPTH = 3;
 constexpr float PI = 3.1415f;
-constexpr float SHADOW_BIAS = 0.2f;
-constexpr float REFLECTION_BIAS = 0.2f;
+constexpr float SHADOW_BIAS = 0.1f;
 
 class CRTRenderer
 {

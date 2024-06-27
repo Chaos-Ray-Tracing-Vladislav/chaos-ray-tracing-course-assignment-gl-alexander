@@ -63,7 +63,7 @@ CRTColor CRTRenderer::rayTrace(const CRTRay& ray, int depth, const CRTVector& ad
         }
         else if (meshHit->getMaterial().type == CRTMaterialType::REFLECTIVE) {
             CRTVector reflectedDirection = reflect(ray.getDirection(), normalVector);
-            CRTRay lightRay(closestHit + reflectedDirection * REFLECTION_BIAS, reflectedDirection);
+            CRTRay lightRay(closestHit, reflectedDirection);
             return rayTrace(lightRay, depth + 1, newAlbedo);
         }
     }
