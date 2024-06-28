@@ -1,29 +1,31 @@
 #pragma once
 #include <iostream>
 #include <vector>
-#include <functional>
 #include "Utils/CRTTriangle.h"
-#include "Utils/CRTColor.h"
 #include "Scene/CRTScene.h"
 #include "Utils/CRTImageSaver.h"
 
 using CRTDistanceScene = std::vector<std::pair<float, const CRTTriangle*>>;
 using CRTImage = std::vector<std::vector<CRTColor>>;
+typedef CRTColor (*VisualizationFunction)(const CRTVector&, const CRTVector&);
+
+constexpr float MAX_RENDER_DISTANCE = 10.0f;
+constexpr float PI = 3.1415f;
+constexpr float SHADOW_BIAS = 0.2f;
+const CRTColor ALBEDO(240, 200, 200);
 
 class CRTRenderer
 {
 	const CRTScene* scene;
 
-	std::vector<CRTTriangle> convertMeshesToTriangles() const;
-	float getMaxDistanceToCamera(const std::vector<CRTTriangle>& triangles) const;
+	CRTColor shade(const CRTVector& point, const CRTTriangle& triangleHit) const;
+	bool intersectsObject(const CRTRay& ray) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 
 	void renderScene(const char* outputname) const;
 	CRTImage renderScene() const;
-	CRTImage renderScene(std::function<CRTColor(const CRTVector&, const CRTTriangle&, float, const CRTVector&)> visualization) const;
 };
 
-CRTColor visualizeByDepth(const CRTVector& point, const CRTTriangle& triangle, float maxDistance, const CRTVector& cameraPosition);
-CRTColor visualizeByTriangle(const CRTVector& point, const CRTTriangle& triangle, float maxDistance, const CRTVector& cameraPosition);
+CRTColor visualizeByDepth(const CRTVector& point, const CRTVector& cameraPosition);
 

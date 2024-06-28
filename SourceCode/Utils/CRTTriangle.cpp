@@ -89,19 +89,37 @@ std::pair<bool, CRTVector> CRTTriangle::intersectsRay(const CRTRay& ray) const
 	}
 
 	// Calculate the signed distance from the ray origin to the plane
-	float distanceToPlane = -(dot(normal, ray.getOrigin() - vertices[0])) / dotPr;
+	float d = -dot(normal, vertices[0]); // the D in the ray equation
 
-	if (distanceToPlane < 0) {
+	float t = -(dot(normal, ray.getOrigin()) + d) / dotPr;
+
+	if (t < 0) {
 		// The intersection is behind the ray origin
 		return { false, CRTVector() };
 	}
 
 	// Compute the hit point
-	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection()  * distanceToPlane);
+	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection()  * t);
 
 	if (pointInTriangle(hitPoint)) {
 		return { true, hitPoint };
 	}
 
 	return { false, hitPoint };
+}
+
+bool CRTTriangle::intersectsShadowRay(const CRTRay& ray) const
+{
+	// checks both sides of the triangle
+	float dotPr = dot(normal, ray.getDirection());
+
+	float d = -dot(normal, vertices[0]);
+
+	float t = -(dot(normal, ray.getOrigin()) + d) / dotPr;
+
+	if (t < 0) return false; // The triangle is behind
+
+	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection() * t);
+
+	return pointInTriangle(hitPoint);
 }

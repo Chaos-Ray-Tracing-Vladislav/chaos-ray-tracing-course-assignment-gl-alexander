@@ -67,15 +67,15 @@ CRTVector operator*(const CRTVector& lhs, const CRTMatrix& rhs) {
 	// row-major multiplication
 	CRTVector result;
 	result.x += lhs.x * rhs.matrix[0][0];
-	result.x += lhs.y * rhs.matrix[0][1];
-	result.x += lhs.z * rhs.matrix[0][2];
+	result.x += lhs.y * rhs.matrix[1][0];
+	result.x += lhs.z * rhs.matrix[2][0];
 
-	result.y += lhs.x * rhs.matrix[1][0];
+	result.y += lhs.x * rhs.matrix[0][1];
 	result.y += lhs.y * rhs.matrix[1][1];
-	result.y += lhs.z * rhs.matrix[1][2];
+	result.y += lhs.z * rhs.matrix[2][1];
 
-	result.z += lhs.x * rhs.matrix[2][0];
-	result.z += lhs.y * rhs.matrix[2][1];
+	result.z += lhs.x * rhs.matrix[0][2];
+	result.z += lhs.y * rhs.matrix[1][2];
 	result.z += lhs.z * rhs.matrix[2][2];
 	return result;
 }
