@@ -74,7 +74,7 @@ bool CRTTriangle::pointInTriangle(const CRTVector& point) const {
 
 	// all the cross products need to be oriented the same way as the normal vector
 
-	return  dot(normal, relativeE0) >= 0 && dot(normal, relativeE1) >= 0 && dot(normal, relativeE2) >= 0;
+	return  dot(normal, relativeE0) >= -EPSILON && dot(normal, relativeE1) >= -EPSILON && dot(normal, relativeE2) >= -EPSILON;
 }
 
 std::pair<bool, CRTVector> CRTTriangle::intersectsRay(const CRTRay& ray) const
