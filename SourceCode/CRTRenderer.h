@@ -5,9 +5,7 @@
 #include "Scene/CRTScene.h"
 #include "Utils/CRTImageSaver.h"
 
-using CRTDistanceScene = std::vector<std::pair<float, const CRTTriangle*>>;
 using CRTImage = std::vector<std::vector<CRTColor>>;
-typedef CRTColor (*VisualizationFunction)(const CRTVector&, const CRTVector&);
 
 constexpr float MAX_RENDER_DISTANCE = 10.0f;
 constexpr int REFLECTION_DEPTH = 3;
@@ -29,6 +27,3 @@ public:
 	CRTImage renderScene() const;
 	CRTImage renderSceneBarycentic() const;
 };
-
-CRTColor visualizeByDepth(const CRTVector& point, const CRTVector& cameraPosition);
-
