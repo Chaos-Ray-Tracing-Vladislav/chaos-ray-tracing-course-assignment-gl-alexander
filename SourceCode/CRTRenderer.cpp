@@ -140,10 +140,3 @@ CRTImage CRTRenderer::renderSceneBarycentic() const
     }
     return image;
 }
-
-
-CRTColor visualizeByDepth(const CRTVector& point, const CRTVector& cameraPosition) {
-    short colorValue = (1 - ((point - cameraPosition).length() / MAX_RENDER_DISTANCE)) * MAX_COLOR_COMPONENT;
-    return { colorValue, colorValue, colorValue };
-}
-
