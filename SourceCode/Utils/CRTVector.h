@@ -34,5 +34,6 @@ CRTVector operator*(float k, const CRTVector& lhs);
 
 CRTVector cross(const CRTVector& lhs, const CRTVector& rhs);
 float dot(const CRTVector& lhs, const CRTVector& rhs);
+CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal);
 
 

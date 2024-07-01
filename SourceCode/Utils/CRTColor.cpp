@@ -21,7 +21,7 @@ CRTColor& CRTColor::operator*=(float m) {
 
 void CRTColor::cap() {
 	if (r > MAX_COLOR_COMPONENT) r = MAX_COLOR_COMPONENT;
-	if (b > MAX_COLOR_COMPONENT) g = MAX_COLOR_COMPONENT;
+	if (g > MAX_COLOR_COMPONENT) g = MAX_COLOR_COMPONENT;
 	if (b > MAX_COLOR_COMPONENT) b = MAX_COLOR_COMPONENT;
 }
 

@@ -100,4 +100,10 @@ float dot(const CRTVector& A, const CRTVector& B) {
 	return (A.x * B.x) + (A.y * B.y) + (A.z * B.z);
 }
 
+CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal)
+{
+	CRTVector Y = dot(incomming, surfaceNormal) * surfaceNormal;
+	return incomming - 2 * Y;
+}
+
 

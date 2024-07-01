@@ -1,26 +1,27 @@
 #include "CRTTriangle.h"
 
-CRTTriangle::CRTTriangle(const CRTVector vertices[VERTICES]) : CRTTriangle(vertices, 
-	{ MAX_COLOR_COMPONENT, MAX_COLOR_COMPONENT, MAX_COLOR_COMPONENT }) {}
-
-
-CRTTriangle::CRTTriangle(const CRTVector vertices[VERTICES], const CRTColor& color) {
-	for (int i = 0; i < VERTICES; i++) {
-		this->vertices[i] = vertices[i];
-	}
-	calculateNormalVector();
-	this->color = color;
+CRTTriangle::CRTTriangle(const CRTVector vertices[VERTICES]) : CRTTriangle(vertices[0], vertices[1], vertices[2]) 
+{
 }
 
-CRTTriangle::CRTTriangle(const CRTVector& v1, const CRTVector& v2, const CRTVector& v3) : CRTTriangle(v1, v2, v3,
-	{ MAX_COLOR_COMPONENT, MAX_COLOR_COMPONENT, MAX_COLOR_COMPONENT }) {}
+CRTTriangle::CRTTriangle(const CRTVector vertices[VERTICES], const CRTVector& normal) : CRTTriangle(vertices[0], vertices[1], vertices[2], normal) 
+{
+}
 
-CRTTriangle::CRTTriangle(const CRTVector& v1, const CRTVector& v2, const CRTVector& v3, const CRTColor& color) {
-	vertices[0] = v1;
-	vertices[1] = v2;
-	vertices[2] = v3;
+
+CRTTriangle::CRTTriangle(const CRTVector& v1, const CRTVector& v2, const CRTVector& v3) {
+	this->vertices[0] = v1;
+	this->vertices[1] = v2;
+	this->vertices[2] = v3;
 	calculateNormalVector();
-	this->color = color;
+}
+
+
+CRTTriangle::CRTTriangle(const CRTVector& v1, const CRTVector& v2, const CRTVector& v3, const CRTVector& normal) {
+	this->vertices[0] = v1;
+	this->vertices[1] = v2;
+	this->vertices[2] = v3;
+	this->normal = normal;
 }
 
 
@@ -48,16 +49,12 @@ std::vector<CRTVector> CRTTriangle::getVertices() const
 	return vert;
 }
 
-const CRTColor& CRTTriangle::getColor() const {
-	return color;
-}
-
 
 float CRTTriangle::area() const {
 	CRTVector v1 = vertices[1] - vertices[0];
 	CRTVector v2 = vertices[2] - vertices[0];
 
-	return abs(dot(v2, v1)) / 2;
+	return cross(v1, v2).length() / 2;
 }
 
 float CRTTriangle::distanceToPoint(const CRTVector& point) const {
@@ -77,7 +74,7 @@ bool CRTTriangle::pointInTriangle(const CRTVector& point) const {
 
 	// all the cross products need to be oriented the same way as the normal vector
 
-	return  dot(normal, relativeE0) >= 0 && dot(normal, relativeE1) >= 0 && dot(normal, relativeE2) >= 0;
+	return  dot(normal, relativeE0) >= -EPSILON && dot(normal, relativeE1) >= -EPSILON && dot(normal, relativeE2) >= -EPSILON;
 }
 
 std::pair<bool, CRTVector> CRTTriangle::intersectsRay(const CRTRay& ray) const
@@ -122,4 +119,18 @@ bool CRTTriangle::intersectsShadowRay(const CRTRay& ray) const
 	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection() * t);
 
 	return pointInTriangle(hitPoint);
+}
+
+CRTVector CRTTriangle::getBarycenticCoordinates(const CRTVector& point) const
+{
+	// we could skip the isInTriangle check to optimize runtime
+	CRTTriangle M_triangle(vertices[0], point, vertices[2], normal);	// both subtriangles are from the same plane
+	CRTTriangle N_triangle(vertices[0], vertices[1], point, normal);	// so they can use the same normal
+
+	float thisArea = area();
+
+	float u = M_triangle.area() / thisArea;
+	float v = N_triangle.area() / thisArea;
+
+	return { u, v, 1 - u - v };
 }
