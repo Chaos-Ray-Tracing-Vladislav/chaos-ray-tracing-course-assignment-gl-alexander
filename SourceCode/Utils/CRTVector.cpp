@@ -48,6 +48,14 @@ CRTVector& CRTVector::operator*=(float k) {
 	return *this;
 }
 
+// by-component multiplication
+CRTVector& CRTVector::operator*=(const CRTVector& other) {
+	x *= other.x;
+	y *= other.y;
+	z *= other.z;
+	return *this;
+}
+
 bool CRTVector::operator==(const CRTVector& other) const {
 	return abs(this->x - other.x) <= EPSILON
 		&& abs(this->y - other.y) <= EPSILON
@@ -75,6 +83,13 @@ CRTVector operator*(const CRTVector& lhs, const float k) {
 
 CRTVector operator*(const float k, const CRTVector& rhs) {
 	return rhs * k;
+}
+
+// by-component multiplication
+CRTVector operator*(const CRTVector& lhs, const CRTVector& rhs) {
+	CRTVector result = lhs;
+	result *= rhs;
+	return result;
 }
 
 /*

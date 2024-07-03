@@ -4,6 +4,8 @@
 #include "../Utils/CRTTriangle.h"
 #include "../Utils/CRTRay.h"
 #include "CRTMaterial.h"
+#include "Intersection.h"
+#include <unordered_map>
 
 static const CRTMaterial DEFAULT_MATERIAL{ CRTMaterialType::DIFFUSE, {0,0,1}, false };
 
@@ -13,20 +15,18 @@ class CRTMesh
 	std::vector<int> triangleVertIndices;
 	std::vector<CRTVector> vertexNormals;
 	std::vector<CRTVector> faceNormals;
-	CRTMaterial material;
+	std::unordered_map<int, std::vector<int>> vertexTriangleParticipation; // for each vertex stores the triangles it's a part of
+	int materialIndex;
 
 	void calculateFaceNormals();
 	void calculateVertexNormals();
 
-	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& point) const;
+	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const;
 public:
-	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices);
-	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, const CRTMaterial& material);
+	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex);
 
-	std::tuple<bool, CRTVector, CRTVector> intersectsRay(const CRTRay& ray) const;
-	std::tuple<bool, CRTVector, CRTVector, CRTVector> intersectsRayBarycentic(const CRTRay& ray) const;
-	bool intersectsShadowRay(const CRTRay& ray) const;
+	Intersection intersectsRay(const CRTRay& ray) const;
 
-	CRTMaterial getMaterial() const;
+	int getMaterialIndex() const;
 };
 

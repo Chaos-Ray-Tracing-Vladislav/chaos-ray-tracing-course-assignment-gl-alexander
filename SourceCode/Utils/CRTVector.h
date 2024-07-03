@@ -21,6 +21,7 @@ struct CRTVector
 	CRTVector& operator-=(const CRTVector& rhs);
 
 	CRTVector& operator*=(float k);
+	CRTVector& operator*=(const CRTVector& other);
 
 	bool operator==(const CRTVector& other) const;
 };
@@ -29,7 +30,8 @@ CRTVector operator+(const CRTVector& lhs, const CRTVector& rhs);
 CRTVector operator-(const CRTVector& lhs, const CRTVector& rhs);
 
 CRTVector operator*(const CRTVector& lhs, float k);
-CRTVector operator*(float k, const CRTVector& lhs);
+CRTVector operator*(float k, const CRTVector& rhs);
+CRTVector operator*(const CRTVector& lhs, const CRTVector& rhs);
 
 
 CRTVector cross(const CRTVector& lhs, const CRTVector& rhs);

@@ -1,10 +1,10 @@
 #pragma once
 #include "CRTVector.h"
-#include "CRTColor.h"
 #include "CRTRay.h"
 #include <cmath>
 #include <vector>
 #include <utility>
+#include "../Scene/Intersection.h"
 
 const int VERTICES = 3;
 
@@ -27,10 +27,9 @@ public:
 
 	float area() const;
 	float distanceToPoint(const CRTVector& point) const;
-
 	bool pointInTriangle(const CRTVector& point) const;
-	std::pair<bool, CRTVector> intersectsRay(const CRTRay& ray) const;
-	bool intersectsShadowRay(const CRTRay& ray) const;
+
+	Intersection intersectsRay(const CRTRay& ray) const;
 
 	CRTVector getBarycenticCoordinates(const CRTVector& point) const;
 };

@@ -77,48 +77,39 @@ bool CRTTriangle::pointInTriangle(const CRTVector& point) const {
 	return  dot(normal, relativeE0) >= -EPSILON && dot(normal, relativeE1) >= -EPSILON && dot(normal, relativeE2) >= -EPSILON;
 }
 
-std::pair<bool, CRTVector> CRTTriangle::intersectsRay(const CRTRay& ray) const
-{
-	float dotPr = dot(normal, ray.getDirection());
-	if (dotPr >= 0) {
+Intersection CRTTriangle::intersectsRay(const CRTRay& ray) const {
+	Intersection intersection;
+	intersection.triangleIndex = NO_HIT_INDEX;
+
+	float dotPr = dot(normal, ray.direction);
+	if (ray.type != RayType::SHADOW && dotPr >= 0) {
 		// Ray is parallel to the plane or facing away from the triangle
-		return { false, CRTVector() };
+		// if we're checking a shadow ray, we ignore this and continue
+		return intersection;
 	}
 
 	// Calculate the signed distance from the ray origin to the plane
 	float d = -dot(normal, vertices[0]); // the D in the ray equation
 
-	float t = -(dot(normal, ray.getOrigin()) + d) / dotPr;
+	float t = -(dot(normal, ray.origin) + d) / dotPr;
 
 	if (t < 0) {
 		// The intersection is behind the ray origin
-		return { false, CRTVector() };
+		return intersection;
 	}
 
 	// Compute the hit point
-	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection()  * t);
+	CRTVector hitPoint = ray.origin + (ray.direction * t);
 
 	if (pointInTriangle(hitPoint)) {
-		return { true, hitPoint };
+		intersection.hitPoint = hitPoint;
+		intersection.triangleIndex = 0;
+		intersection.faceNormal = normal;
+		intersection.barycentricCoordinates = getBarycenticCoordinates(hitPoint);
+		return intersection;
 	}
 
-	return { false, hitPoint };
-}
-
-bool CRTTriangle::intersectsShadowRay(const CRTRay& ray) const
-{
-	// checks both sides of the triangle
-	float dotPr = dot(normal, ray.getDirection());
-
-	float d = -dot(normal, vertices[0]);
-
-	float t = -(dot(normal, ray.getOrigin()) + d) / dotPr;
-
-	if (t < 0) return false; // The triangle is behind
-
-	CRTVector hitPoint = ray.getOrigin() + (ray.getDirection() * t);
-
-	return pointInTriangle(hitPoint);
+	return intersection;
 }
 
 CRTVector CRTTriangle::getBarycenticCoordinates(const CRTVector& point) const

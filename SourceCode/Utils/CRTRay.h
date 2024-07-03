@@ -1,15 +1,19 @@
 #pragma once
 #include "CRTVector.h"
 
-class CRTRay
+enum class RayType {
+	CAMERA, 
+	SHADOW, 
+	REFLECTIVE,
+	REFRACTIVE,
+	INVALID
+};
+
+struct CRTRay
 {
 	CRTVector origin;
 	CRTVector direction;
-public: 
-	CRTRay();
-	CRTRay(const CRTVector& origin, const CRTVector& direction);
-
-	const CRTVector& getOrigin() const;
-	const CRTVector& getDirection() const;
+	RayType type;
+	int depth;
 };
 

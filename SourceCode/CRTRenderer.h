@@ -5,19 +5,22 @@
 #include "Scene/CRTScene.h"
 #include "Utils/CRTImageSaver.h"
 
-using CRTImage = std::vector<std::vector<CRTColor>>;
+using CRTImage = std::vector<std::vector<CRTVector>>;
 
-constexpr float MAX_RENDER_DISTANCE = 10.0f;
-constexpr int REFLECTION_DEPTH = 3;
+constexpr int MAX_RAY_DEPTH = 3;
 constexpr float PI = 3.1415f;
-constexpr float SHADOW_BIAS = 0.1f;
+constexpr float SHADOW_BIAS = 0.001f;
+constexpr float REFLECTION_BIAS = 0.001f;
 
 class CRTRenderer
 {
 	const CRTScene* scene;
 
-	CRTColor rayTrace(const CRTRay& ray, int depth, const CRTVector& addedAlbedo) const;
-	CRTColor shade(const CRTVector& point, const CRTVector& normalVector, const CRTVector& albedo) const;
+	Intersection rayTrace(const CRTRay& ray) const;
+
+	CRTVector shade(const CRTRay& ray, const Intersection& data) const;
+	CRTVector shadeDiffuse(const CRTRay& ray, const Intersection& data) const;
+	CRTVector shadeReflective(const CRTRay& ray, const Intersection& data) const;
 	bool intersectsObject(const CRTRay& ray) const;
 public:
 	CRTRenderer(const CRTScene* scene);

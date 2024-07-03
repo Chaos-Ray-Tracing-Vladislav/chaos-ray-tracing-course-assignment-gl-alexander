@@ -1,6 +1,12 @@
 #include "CRTColor.h"
 
 CRTColor::CRTColor(short r, short g, short b) : r(r), g(g), b(b) {}
+CRTColor::CRTColor(const CRTVector& vec) {
+	r = (short)vec.x ;
+	g = (short)vec.y;
+	b = (short)vec.z;
+	cap();
+}
 CRTColor::CRTColor() : CRTColor(0, 0, 0) {}
 
 CRTColor& CRTColor::operator+=(const CRTColor& other) {
