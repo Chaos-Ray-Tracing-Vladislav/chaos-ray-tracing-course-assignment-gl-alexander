@@ -4,20 +4,23 @@
 #include <climits>
 #include <assert.h>
 
+static float clamp(float original, float start, float end) {
+    if (original < start) return start;
+    if (original > end) return end;
+    return original;
+}
+
 CRTRenderer::CRTRenderer(const CRTScene* scene) : scene(scene)
 {}
 
-
 void CRTRenderer::renderScene(const char* outputname) const
 {
-    CRTImage img = renderScene();
-    CRTImageSaver::saveImage(outputname, img);
+    CRTImageSaver::saveImage(outputname, renderScene());
 }
 
 void CRTRenderer::renderSceneBarycentic(const char* outputname) const
 {
-    CRTImage img = renderSceneBarycentic();
-    CRTImageSaver::saveImage(outputname, img);
+    CRTImageSaver::saveImage(outputname, renderSceneBarycentic());
 }
 
 CRTImage CRTRenderer::renderScene() const
@@ -40,13 +43,13 @@ Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
 {
     Intersection intersection;
     Intersection curr_intersection;
-    float minDistanceToCamera = FLT_MAX;
+    float minDistanceToOrigin = FLT_MAX;
     for (int i = 0; i < scene->getObjectsCount(); i++) {
         curr_intersection = scene->getGeometryObject(i).intersectsRay(ray);
         if (curr_intersection.triangleIndex != NO_HIT_INDEX) {
-            double distanceToCamera = (curr_intersection.hitPoint - ray.origin).length();
-            if (distanceToCamera < minDistanceToCamera) {
-                minDistanceToCamera = distanceToCamera;
+            double distanceToOrigin = (curr_intersection.hitPoint - ray.origin).length();
+            if (distanceToOrigin < minDistanceToOrigin) {
+                minDistanceToOrigin = distanceToOrigin;
                 intersection = std::move(curr_intersection);
                 intersection.hitObjectIndex = i; // here we set the mesh it hits
                 intersection.materialIndex = scene->getGeometryObject(i).getMaterialIndex();
@@ -68,13 +71,16 @@ CRTVector CRTRenderer::shade(const CRTRay& ray, const Intersection& data) const
     else if (material.type == CRTMaterialType::REFLECTIVE) {
         return shadeReflective(ray, data);
     }
+    else if (material.type == CRTMaterialType::REFRACTIVE) {
+        return shadeRefractive(ray, data);
+    }
     else {
         assert(false);
     }
 }
 
 CRTVector CRTRenderer::shadeDiffuse(const CRTRay& ray, const Intersection& data) const {
-    CRTVector finalColor = { 0, 0, 0 };
+    CRTVector finalColor{ 0.0, 0.0, 0.0 };
     CRTVector normalVector = data.faceNormal;
     const CRTMaterial& material = scene->getMaterial(data.materialIndex);
     if (material.smoothShading) {
@@ -87,12 +93,14 @@ CRTVector CRTRenderer::shadeDiffuse(const CRTRay& ray, const Intersection& data)
         lightDirection.normalize();
         float cosLaw = std::max(0.0f, dot(lightDirection, normalVector));
         CRTRay shadowRay{ data.hitPoint + normalVector * SHADOW_BIAS, lightDirection, RayType::SHADOW, ray.depth + 1 };
-        if (!intersectsObject(shadowRay)) {
+        if (!intersectsObject(shadowRay, sphereRadius)) {
             float multValue = light.getIntensity() / sphereArea * cosLaw;
             finalColor += material.albedo * multValue;
         }
     }
-    return finalColor;
+    return CRTVector(clamp(finalColor.x, 0, 1), 
+        clamp(finalColor.y, 0, 1), 
+        clamp(finalColor.z, 0, 1));
 }
 
 CRTVector CRTRenderer::shadeReflective(const CRTRay& ray, const Intersection& data) const {
@@ -106,11 +114,62 @@ CRTVector CRTRenderer::shadeReflective(const CRTRay& ray, const Intersection& da
     return shade(reflectedRay, rayTrace(reflectedRay)) * material.albedo;
 }
 
-bool CRTRenderer::intersectsObject(const CRTRay& ray) const
+CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& data) const {
+    const CRTMaterial& material = scene->getMaterial(data.materialIndex);
+    float n1 = 1.0f; // Index of refraction of the air
+    float n2 = material.ior;
+    CRTVector normalVector = material.smoothShading ? data.smoothNormal : data.faceNormal;
+
+    float dotPr = dot(ray.direction, normalVector);
+    if (dotPr > 0) { // Ray is leaving the refractive object
+        normalVector *= -1;
+        dotPr *= -1;
+        std::swap(n1, n2);
+    }
+
+    float cosIncomming = -dotPr;
+    float sinIncomming = 1.0f - cosIncomming * cosIncomming;
+
+    if (sinIncomming >= ((n2 * n2) / (n1 * n1))) { // total internal reflection
+        CRTVector reflectedDirection = reflect(ray.direction, normalVector);
+        CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
+        return shade(reflectedRay, rayTrace(reflectedRay));
+    }
+
+    float sinOutcomming = sqrt(sinIncomming) * n1 / n2;
+    float cosOutcomming = sqrt(1.0f - sinOutcomming * sinOutcomming);
+
+    CRTVector A = cosOutcomming * (-normalVector);
+    CRTVector C = ray.direction + (cosIncomming * normalVector);
+    C.normalize();
+    CRTVector refractedDirection = A + (C * sinOutcomming);
+    refractedDirection.normalize();
+
+    CRTRay refractedRay{ data.hitPoint + normalVector * -REFRACTION_BIAS, refractedDirection, RayType::REFRACTIVE, ray.depth + 1 };
+
+    CRTVector reflectedDirection = reflect(ray.direction, normalVector);
+    CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
+
+    float fresnel = 0.5f * pow(1.0f + dotPr, 5);
+    if (fresnel > 0.5) {
+        return shade(reflectedRay, rayTrace(reflectedRay));
+    }
+    else {
+        return shade(refractedRay, rayTrace(refractedRay));
+    }
+    return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
+}
+
+bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) const
 {
+    Intersection intersection;
     for (int i = 0; i < scene->getObjectsCount(); i++) {
-        if (scene->getGeometryObject(i).intersectsRay(ray).triangleIndex != NO_HIT_INDEX) {
-            return true;
+        intersection = scene->getGeometryObject(i).intersectsRay(ray);
+        if (intersection.triangleIndex != NO_HIT_INDEX) {
+            if ((ray.origin - intersection.hitPoint).length() < distanceToLight 
+                && scene->getMaterial(intersection.materialIndex).type != CRTMaterialType::REFRACTIVE) {
+                return true;
+            }
         }
     }
     return false;

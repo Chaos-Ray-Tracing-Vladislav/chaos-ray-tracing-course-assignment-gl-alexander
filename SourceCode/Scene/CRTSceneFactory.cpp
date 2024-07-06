@@ -154,27 +154,39 @@ std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc) {
 }
 
 CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
+	CRTMaterial material;
 	const Value& typeVal = matVal.FindMember(crtSceneMeshMaterialType)->value;
 	assert(!typeVal.IsNull() && typeVal.IsString());
 	const char* typeAsString = typeVal.GetString();
 	CRTMaterialType type = CRTMaterialType::DIFFUSE;
 	if (strcmp(typeAsString, crtSceneMeshMaterialDiffuse) == 0) {
-		type = CRTMaterialType::DIFFUSE;
+		material.type = CRTMaterialType::DIFFUSE;
 	}
 	else if (strcmp(typeAsString, crtSceneMeshMaterialReflective) == 0) {
-		type = CRTMaterialType::REFLECTIVE;
+		material.type = CRTMaterialType::REFLECTIVE;
+	}
+	else if (strcmp(typeAsString, crtSceneMeshMaterialRefractive) == 0) {
+		material.type = CRTMaterialType::REFRACTIVE;
 	}
 	else {
 		throw std::logic_error("material type unknown");
 	}
-
-	const Value& albedoVal = matVal.FindMember(crtSceneMeshMaterialAlbedo)->value;
-	assert(!albedoVal.IsNull() && albedoVal.IsArray());
-	CRTVector albedo = loadVector(albedoVal.GetArray());
-
 	const Value& shadingVal = matVal.FindMember(crtSceneMeshMaterialSmoothShading)->value;
 	assert(!shadingVal.IsNull() && shadingVal.IsBool());
-	return { type, albedo, shadingVal.GetBool() };
+	material.smoothShading = shadingVal.GetBool();
+
+	const Value& albedoVal = matVal.FindMember(crtSceneMeshMaterialAlbedo)->value;
+	const Value& iorVal = matVal.FindMember(crtSceneMeshMaterialIndexOfRefraction)->value;
+
+	if (!albedoVal.IsNull() && albedoVal.IsArray()) {
+		material.albedo = loadVector(albedoVal.GetArray());
+	}
+
+	if (!iorVal.IsNull() && iorVal.IsDouble()) {
+		material.ior = iorVal.GetDouble();
+	}	
+
+	return material;
 }
 
 std::vector<CRTMaterial> CRTSceneFactory::parseMaterials(const rapidjson::Document& doc)

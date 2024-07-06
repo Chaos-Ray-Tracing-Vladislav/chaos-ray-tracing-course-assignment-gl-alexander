@@ -7,10 +7,11 @@
 
 using CRTImage = std::vector<std::vector<CRTVector>>;
 
-constexpr int MAX_RAY_DEPTH = 3;
+constexpr int MAX_RAY_DEPTH = 5;
 constexpr float PI = 3.1415f;
 constexpr float SHADOW_BIAS = 0.001f;
 constexpr float REFLECTION_BIAS = 0.001f;
+constexpr float REFRACTION_BIAS = 0.001f;
 
 class CRTRenderer
 {
@@ -21,7 +22,8 @@ class CRTRenderer
 	CRTVector shade(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeDiffuse(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeReflective(const CRTRay& ray, const Intersection& data) const;
-	bool intersectsObject(const CRTRay& ray) const;
+	CRTVector shadeRefractive(const CRTRay& ray, const Intersection& data) const;
+	bool intersectsObject(const CRTRay& ray, float distanceToLight) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 

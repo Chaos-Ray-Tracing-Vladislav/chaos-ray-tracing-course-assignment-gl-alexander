@@ -45,3 +45,5 @@ static const char* crtSceneMeshMaterialSmoothShading = "smooth_shading";
 static const char* crtSceneMeshMaterialIndex = "material_index";
 static const char* crtSceneMeshMaterialDiffuse = "diffuse";
 static const char* crtSceneMeshMaterialReflective = "reflective";
+static const char* crtSceneMeshMaterialRefractive = "refractive";
+static const char* crtSceneMeshMaterialIndexOfRefraction = "ior";

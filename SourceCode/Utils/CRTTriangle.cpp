@@ -82,9 +82,9 @@ Intersection CRTTriangle::intersectsRay(const CRTRay& ray) const {
 	intersection.triangleIndex = NO_HIT_INDEX;
 
 	float dotPr = dot(normal, ray.direction);
-	if (ray.type != RayType::SHADOW && dotPr >= 0) {
+	if (ray.type == RayType::CAMERA && dotPr >= 0) {
+		// back face culling for camera rays only
 		// Ray is parallel to the plane or facing away from the triangle
-		// if we're checking a shadow ray, we ignore this and continue
 		return intersection;
 	}
 

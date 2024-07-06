@@ -5,8 +5,7 @@ enum class RayType {
 	CAMERA, 
 	SHADOW, 
 	REFLECTIVE,
-	REFRACTIVE,
-	INVALID
+	REFRACTIVE
 };
 
 struct CRTRay
