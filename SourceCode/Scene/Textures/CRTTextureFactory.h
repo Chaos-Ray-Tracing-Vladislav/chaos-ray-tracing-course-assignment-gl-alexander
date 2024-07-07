@@ -5,7 +5,7 @@
 #include "EdgeTexture.h"
 #include "CheckerTexture.h"
 #include "BitmapTexture.h"
-#include "../../rapidjson/document.h"
+#include "../rapidjson/document.h"
 
 class CRTTextureFactory
 {

@@ -2,8 +2,8 @@
 #include <fstream>
 #include "CRTScene.h"
 #include "Textures/CRTTextureFactory.h"
-#include "../rapidjson/document.h"
-#include "../rapidjson/istreamwrapper.h"
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
 
 class CRTSceneFactory {
 	static CRTVector loadVector(const rapidjson::Value::ConstArray& arr);
