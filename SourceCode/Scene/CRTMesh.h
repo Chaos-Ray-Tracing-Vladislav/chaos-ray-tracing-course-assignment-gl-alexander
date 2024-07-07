@@ -12,6 +12,7 @@ static const CRTMaterial DEFAULT_MATERIAL{ CRTMaterialType::DIFFUSE, {0,0,1}, fa
 class CRTMesh
 {
 	std::vector<CRTVector> vertices;
+	std::vector<CRTVector> uvs;
 	std::vector<int> triangleVertIndices;
 	std::vector<CRTVector> vertexNormals;
 	std::vector<CRTVector> faceNormals;
@@ -23,9 +24,11 @@ class CRTMesh
 
 	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const;
 public:
-	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex);
+	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex);
 
 	Intersection intersectsRay(const CRTRay& ray) const;
+
+	CRTVector getUV(const Intersection& data) const;
 
 	int getMaterialIndex() const;
 };

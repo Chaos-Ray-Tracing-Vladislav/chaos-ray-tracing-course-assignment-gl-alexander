@@ -18,9 +18,9 @@ static Document getJsonDocument(const char* filename) {
 CRTVector CRTSceneFactory::loadVector(const Value::ConstArray& arr) {
 	assert(arr.Size() == 3);
 	CRTVector vec{
-		static_cast<float>(arr[0].GetDouble()),
-		static_cast<float>(arr[1].GetDouble()),
-		static_cast<float>(arr[2].GetDouble())
+		static_cast<float>(arr[0].GetFloat()),
+		static_cast<float>(arr[1].GetFloat()),
+		static_cast<float>(arr[2].GetFloat())
 	};
 	return vec;
 }
@@ -29,19 +29,19 @@ CRTMatrix CRTSceneFactory::loadMatrix(const Value::ConstArray& arr) {
 	assert(arr.Size() == 9);
 	float matrix[3][3] = {
 		{
-			arr[0].GetDouble(),
-			arr[1].GetDouble(),
-			arr[2].GetDouble()
+			arr[0].GetFloat(),
+			arr[1].GetFloat(),
+			arr[2].GetFloat()
 		},
 		{
-			static_cast<float>(arr[3].GetDouble()),
-			static_cast<float>(arr[4].GetDouble()),
-			static_cast<float>(arr[5].GetDouble())
+			static_cast<float>(arr[3].GetFloat()),
+			static_cast<float>(arr[4].GetFloat()),
+			static_cast<float>(arr[5].GetFloat())
 		},
 		{
-			static_cast<float>(arr[6].GetDouble()),
-			static_cast<float>(arr[7].GetDouble()),
-			static_cast<float>(arr[8].GetDouble())
+			static_cast<float>(arr[6].GetFloat()),
+			static_cast<float>(arr[7].GetFloat()),
+			static_cast<float>(arr[8].GetFloat())
 		}
 	};
 	return CRTMatrix(matrix);
@@ -50,7 +50,7 @@ CRTMatrix CRTSceneFactory::loadMatrix(const Value::ConstArray& arr) {
 CRTLight CRTSceneFactory::loadLight(const Value::ConstObject& lightVal) {
 	const Value& intensityVal = lightVal.FindMember(crtSceneLightIntensity)->value;
 	assert(!intensityVal.IsNull() && intensityVal.IsNumber());
-	float intensityResult = intensityVal.GetDouble();
+	float intensityResult = intensityVal.GetFloat();
 	const Value& positionVal = lightVal.FindMember(crtSceneLightPosition)->value;
 	assert(!positionVal.IsNull() && positionVal.IsArray());
 	return CRTLight(loadVector(positionVal.GetArray()), intensityResult);
@@ -109,9 +109,9 @@ std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& ar
 	for (int i = 0; i < verticesCount; i++) {
 		size_t currentBatch = i * CRTVector::MEMBERS_COUNT;
 		CRTVector vec{
-		static_cast<float>(arr[currentBatch + 0].GetDouble()),
-		static_cast<float>(arr[currentBatch + 1].GetDouble()),
-		static_cast<float>(arr[currentBatch + 2].GetDouble())
+		static_cast<float>(arr[currentBatch + 0].GetFloat()),
+		static_cast<float>(arr[currentBatch + 1].GetFloat()),
+		static_cast<float>(arr[currentBatch + 2].GetFloat())
 		};
 		result.push_back(vec);
 	}
@@ -131,11 +131,18 @@ std::vector<int> CRTSceneFactory::loadTriangleIndices(const Value::ConstArray& a
 CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
 	const Value& meshVertices = meshVal.FindMember(crtSceneVertices)->value;
 	assert(!meshVertices.IsNull() && meshVertices.IsArray());
+
 	const Value& triangleVal = meshVal.FindMember(crtSceneTriangles)->value;
 	assert(!triangleVal.IsNull() && triangleVal.IsArray());
+
 	const Value& materialIndexVal = meshVal.FindMember(crtSceneMeshMaterialIndex)->value;
 	assert(!materialIndexVal.IsNull() && materialIndexVal.IsInt());
+
+	const Value& meshUVs = meshVal.FindMember(crtSceneUVs)->value;
+	assert(!meshUVs.IsNull() && meshUVs.IsArray());
+
 	return CRTMesh(loadVertices(meshVertices.GetArray()),
+		loadVertices(meshUVs.GetArray()),
 		loadTriangleIndices(triangleVal.GetArray()),
 		materialIndexVal.GetInt());
 }
@@ -175,16 +182,15 @@ CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
 	assert(!shadingVal.IsNull() && shadingVal.IsBool());
 	material.smoothShading = shadingVal.GetBool();
 
-	const Value& albedoVal = matVal.FindMember(crtSceneMeshMaterialAlbedo)->value;
-	const Value& iorVal = matVal.FindMember(crtSceneMeshMaterialIndexOfRefraction)->value;
+	const Value& textureNameVal = matVal.FindMember(crtSceneMeshTextureName)->value;
+	assert(!textureNameVal.IsNull() && textureNameVal.IsString());
+	material.textureName = textureNameVal.GetString();
 
-	if (!albedoVal.IsNull() && albedoVal.IsArray()) {
-		material.albedo = loadVector(albedoVal.GetArray());
+	if (type == CRTMaterialType::REFRACTIVE) {
+		const Value& iorVal = matVal.FindMember(crtSceneMeshMaterialIndexOfRefraction)->value;
+		assert(!iorVal.IsNull() && iorVal.IsDouble());
+		material.ior = iorVal.GetFloat();
 	}
-
-	if (!iorVal.IsNull() && iorVal.IsDouble()) {
-		material.ior = iorVal.GetDouble();
-	}	
 
 	return material;
 }
@@ -212,8 +218,9 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	parseSettings(doc, settings, camera);
 
 	std::vector<CRTLight> lights = parseLights(doc);
+	std::vector<std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
 	std::vector<CRTMaterial> materials = parseMaterials(doc);
 	std::vector<CRTMesh> geometryObjects = parseObjects(doc);
 
-	return new CRTScene(camera, settings, geometryObjects, materials, lights);
+	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights);
 }
