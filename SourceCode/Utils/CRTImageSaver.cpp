@@ -26,7 +26,7 @@ void CRTImageSaver::saveImage(std::ofstream& ppm, const CRTImage& image) {
     unsigned imageWidth = image[0].size();
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            ppm << image[rowId][colId];
+            ppm << (image[rowId][colId] * MAX_COLOR_COMPONENT);
             if (colId != imageWidth) {
                 ppm << PIXEL_SEP;
             }

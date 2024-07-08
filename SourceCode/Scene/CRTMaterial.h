@@ -3,12 +3,14 @@
 
 enum class CRTMaterialType {
 	DIFFUSE,
-	REFLECTIVE
+	REFLECTIVE,
+	REFRACTIVE
 };
 
 struct CRTMaterial {
 	CRTMaterialType type;
 	CRTVector albedo;
 	bool smoothShading;
+	float ior;
 };
 

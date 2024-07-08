@@ -1,6 +1,6 @@
 #pragma once
 #include <iostream>
-
+#include "CRTVector.h"
 const short MAX_COLOR_COMPONENT = 255;
 
 struct CRTColor {
@@ -8,6 +8,7 @@ struct CRTColor {
 	short g;
 	short b;
 	CRTColor(short r, short g, short b);
+	CRTColor(const CRTVector& vec);
 	CRTColor();
 
 	CRTColor& operator+=(const CRTColor& other);

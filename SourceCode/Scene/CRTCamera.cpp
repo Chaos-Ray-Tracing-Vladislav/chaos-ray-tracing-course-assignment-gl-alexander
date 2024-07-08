@@ -70,7 +70,7 @@ CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
 	direction = direction * this->rotation;
 	direction.normalize();
 
-	return CRTRay(this->position, direction);
+	return { this->position, direction, RayType::CAMERA, 0 };
 }
 
 void CRTCamera::moveCamera(const CRTVector& position) {

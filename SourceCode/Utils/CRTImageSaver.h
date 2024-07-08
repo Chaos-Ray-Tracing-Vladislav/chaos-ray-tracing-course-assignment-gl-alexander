@@ -3,8 +3,9 @@
 #include <vector>
 #include <fstream>
 #include "CRTColor.h"
+#include "CRTVector.h"
 
-using CRTImage = std::vector<std::vector<CRTColor>>;
+using CRTImage = std::vector<std::vector<CRTVector>>;
 
 
 static const char LINE_SEP = '\n';

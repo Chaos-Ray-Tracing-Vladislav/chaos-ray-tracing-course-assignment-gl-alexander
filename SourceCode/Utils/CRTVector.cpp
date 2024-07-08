@@ -15,16 +15,17 @@ float CRTVector::length() const {
 	return sqrt(x * x + y * y + z * z);
 }
 
-void CRTVector::normalize() {
+CRTVector& CRTVector::normalize() {
 	float originalLength = length();
 	float multiplication = 1.0f / length();
 	if (std::abs(originalLength - 1) <= EPSILON || originalLength <= EPSILON) {		
 		// doesn't normalize already normalized vectors, as well as the 0 length vector
-		return;
+		return *this;
 	}
 	x *= multiplication;
 	y *= multiplication;
 	z *= multiplication;
+	return *this;
 }
 
 CRTVector& CRTVector::operator+=(const CRTVector& rhs) {
@@ -48,6 +49,14 @@ CRTVector& CRTVector::operator*=(float k) {
 	return *this;
 }
 
+// by-component multiplication
+CRTVector& CRTVector::operator*=(const CRTVector& other) {
+	x *= other.x;
+	y *= other.y;
+	z *= other.z;
+	return *this;
+}
+
 bool CRTVector::operator==(const CRTVector& other) const {
 	return abs(this->x - other.x) <= EPSILON
 		&& abs(this->y - other.y) <= EPSILON
@@ -67,6 +76,11 @@ CRTVector operator-(const CRTVector& lhs, const CRTVector& rhs) {
 	return result;
 }
 
+CRTVector operator-(const CRTVector& unaryVec)
+{
+	return unaryVec * -1.0f;
+}
+
 CRTVector operator*(const CRTVector& lhs, const float k) {
 	CRTVector result = lhs;
 	result *= k;
@@ -75,6 +89,13 @@ CRTVector operator*(const CRTVector& lhs, const float k) {
 
 CRTVector operator*(const float k, const CRTVector& rhs) {
 	return rhs * k;
+}
+
+// by-component multiplication
+CRTVector operator*(const CRTVector& lhs, const CRTVector& rhs) {
+	CRTVector result = lhs;
+	result *= rhs;
+	return result;
 }
 
 /*
@@ -103,7 +124,7 @@ float dot(const CRTVector& A, const CRTVector& B) {
 CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal)
 {
 	CRTVector Y = dot(incomming, surfaceNormal) * surfaceNormal;
-	return incomming - 2 * Y;
+	return (incomming - 2 * Y).normalize();
 }
 
 

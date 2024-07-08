@@ -1,5 +1,5 @@
 #pragma once
-#include "../Utils/CRTColor.h"
+#include "../Utils/CRTVector.h"
 
 struct CRTImageSettings {
 	unsigned width;
@@ -8,7 +8,7 @@ struct CRTImageSettings {
 
 struct CRTSettings
 {
-	CRTColor bgColor;
+	CRTVector bgColor;
 	CRTImageSettings imageSettings;
 };
 
