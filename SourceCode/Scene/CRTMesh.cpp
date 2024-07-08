@@ -31,8 +31,8 @@ void CRTMesh::calculateVertexNormals() {
 }
 
 
-CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex) :
-    vertices(vertices), triangleVertIndices(triangleVertIndices), materialIndex(materialIndex)
+CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex) :
+    vertices(vertices), triangleVertIndices(triangleVertIndices), materialIndex(materialIndex), uvs(uvs)
 {
     faceNormals.resize(triangleVertIndices.size() / VERTICES);
     vertexNormals.resize(vertices.size());
@@ -80,6 +80,17 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
     intersection.materialIndex = materialIndex;
     intersection.hitObjectIndex = 0; // so we mark the hit;
     return intersection;
+}
+
+CRTVector CRTMesh::getUV(const Intersection& data) const
+{
+    unsigned v0_index = triangleVertIndices[data.triangleIndex + 0];
+    unsigned v1_index = triangleVertIndices[data.triangleIndex + 1];
+    unsigned v2_index = triangleVertIndices[data.triangleIndex + 2];
+    
+    return uvs[v1_index] * data.barycentricCoordinates.x
+        + uvs[v2_index] * data.barycentricCoordinates.y
+        + uvs[v0_index] * data.barycentricCoordinates.z;
 }
 
 

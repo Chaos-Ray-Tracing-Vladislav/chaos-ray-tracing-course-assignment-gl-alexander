@@ -1,8 +1,9 @@
 #pragma once
 #include <fstream>
 #include "CRTScene.h"
-#include "../rapidjson/document.h"
-#include "../rapidjson/istreamwrapper.h"
+#include "Textures/CRTTextureFactory.h"
+#include "rapidjson/document.h"
+#include "rapidjson/istreamwrapper.h"
 
 class CRTSceneFactory {
 	static CRTVector loadVector(const rapidjson::Value::ConstArray& arr);
@@ -34,16 +35,18 @@ static const char* crtSceneCameraMatrix = "matrix";
 static const char* crtSceneCameraPosition = "position";
 static const char* crtSceneObjects = "objects";
 static const char* crtSceneVertices = "vertices";
+static const char* crtSceneUVs = "uvs";
 static const char* crtSceneTriangles = "triangles";
 static const char* crtSceneLights = "lights";
 static const char* crtSceneLightPosition = "position";
 static const char* crtSceneLightIntensity = "intensity";
 static const char* crtSceneMeshMaterials = "materials";
-static const char* crtSceneMeshMaterialAlbedo = "albedo";
 static const char* crtSceneMeshMaterialType = "type";
+static const char* crtSceneMeshTextureName = "albedo";
 static const char* crtSceneMeshMaterialSmoothShading = "smooth_shading";
 static const char* crtSceneMeshMaterialIndex = "material_index";
 static const char* crtSceneMeshMaterialDiffuse = "diffuse";
 static const char* crtSceneMeshMaterialReflective = "reflective";
 static const char* crtSceneMeshMaterialRefractive = "refractive";
 static const char* crtSceneMeshMaterialIndexOfRefraction = "ior";
+

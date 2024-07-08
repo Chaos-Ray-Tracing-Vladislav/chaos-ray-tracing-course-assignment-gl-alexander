@@ -1,5 +1,6 @@
 #pragma once
 #include "../Utils/CRTVector.h"
+#include <string>
 
 enum class CRTMaterialType {
 	DIFFUSE,
@@ -9,7 +10,7 @@ enum class CRTMaterialType {
 
 struct CRTMaterial {
 	CRTMaterialType type;
-	CRTVector albedo;
+	std::string textureName;
 	bool smoothShading;
 	float ior;
 };

@@ -1,9 +1,7 @@
 #pragma once
-
 constexpr float EPSILON = 0.00001;
 
-struct CRTVector
-{
+struct CRTVector {
 	static const unsigned MEMBERS_COUNT = 3;
 
 	float x;
@@ -39,5 +37,3 @@ CRTVector operator*(const CRTVector& lhs, const CRTVector& rhs);
 CRTVector cross(const CRTVector& lhs, const CRTVector& rhs);
 float dot(const CRTVector& lhs, const CRTVector& rhs);
 CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal);
-
-
