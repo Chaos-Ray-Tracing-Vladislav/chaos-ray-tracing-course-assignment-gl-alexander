@@ -132,14 +132,14 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     float cosIncomming = -dotPr;
     float sinIncomming = 1.0f - cosIncomming * cosIncomming;
 
-    if (sinIncomming >= ((n2 * n2) / (n1 * n1))) { // total internal reflection
+    if (sinIncomming > ((n2 * n2) / (n1 * n1))) { // total internal reflection
         CRTVector reflectedDirection = reflect(ray.direction, normalVector);
         CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
         return shade(reflectedRay, rayTrace(reflectedRay));
     }
 
-    float sinOutcomming = sqrt(sinIncomming) * n1 / n2;
-    float cosOutcomming = sqrt(1.0f - sinOutcomming * sinOutcomming);
+    float sinOutcomming = (n1 / n2) * sqrt(std::max(0.0f, 1.0f - cosIncomming * cosIncomming));
+    float cosOutcomming = sqrt(std::max(0.0f, 1.0f - sinOutcomming * sinOutcomming));
 
     CRTVector A = cosOutcomming * (-normalVector);
     CRTVector C = ray.direction + (cosIncomming * normalVector);
@@ -152,9 +152,16 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     CRTVector reflectedDirection = reflect(ray.direction, normalVector);
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
-    float fresnel = 0.5f * pow(1.0f + dotPr, 5);
+    // Improved Fresnel calculation using Schlick's approximation
+    //float R0 = pow((n1 - n2) / (n1 + n2), 2);
+    //float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
+
+    // Simple Fresnel calculation
+    float fresnel = 0.5 * pow(1.0f - cosIncomming, 5);
+
     return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }
+
 
 bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) const
 {
@@ -182,18 +189,7 @@ CRTImage CRTRenderer::renderSceneBarycentic() const
     Intersection intersection;
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            intersection.triangleIndex = NO_HIT_INDEX;
-            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); // we generate the ray "on demand"
-            float minDistanceToCamera = FLT_MAX;
-            for (int i = 0; i < scene->getObjectsCount(); i++) {
-                intersection = scene->getGeometryObject(i).intersectsRay(ray);
-                if (intersection.triangleIndex != NO_HIT_INDEX) {
-                    double distanceToCamera = (intersection.hitPoint - scene->getCamera().getPosition()).length();
-                    if (distanceToCamera < minDistanceToCamera) {
-                        minDistanceToCamera = distanceToCamera;
-                    }
-                }
-            }
+            intersection = rayTrace(scene->getCamera().getRayForPixel(rowId, colId));
             if (intersection.triangleIndex != NO_HIT_INDEX) {
                 image[rowId][colId] = intersection.barycentricCoordinates;
             }

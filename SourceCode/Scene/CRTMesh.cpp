@@ -50,9 +50,9 @@ CRTVector CRTMesh::calculateSmoothNormal(int triangleIndex, const CRTVector& bar
     CRTVector v2_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex + 2]];
 
     // calculate the normal based on the barycentic coordinates {u, v, w} using the formula
-    return v0_VertexNormal * barycentic.z
+    return (v0_VertexNormal * barycentic.z
         + v1_VertexNormal * barycentic.x
-        + v2_VertexNormal * barycentic.y;
+        + v2_VertexNormal * barycentic.y).normalize();
 }
 
 Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
