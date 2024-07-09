@@ -8,7 +8,6 @@
 #include "CRTLight.h"
 #include "Textures/Texture.h"
 
-
 class CRTScene
 {
 	std::vector<CRTMesh> geometryObjects;
@@ -18,6 +17,9 @@ class CRTScene
 	CRTCamera camera;
 	CRTSettings settings;
 	std::vector<CRTLight> lights;
+
+	std::shared_ptr<Texture> getTexture(const std::string& textureName) const;
+
 public:
 	CRTScene(const CRTCamera& camera, const CRTSettings& settings, 
 		const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials, 
@@ -25,8 +27,9 @@ public:
 	
 	const CRTMesh& getGeometryObject(int index) const;
 	const CRTMaterial& getMaterial(int index) const;
-	std::shared_ptr<Texture> getTexture(const std::string& textureName) const;
 	int getObjectsCount() const;
+
+	CRTVector sampleMaterial(const Intersection& data) const;
 
 	const CRTCamera& getCamera() const;
 	const CRTSettings& getSettings() const;

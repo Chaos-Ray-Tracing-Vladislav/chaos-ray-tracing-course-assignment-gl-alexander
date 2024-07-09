@@ -4,11 +4,10 @@ EdgeTexture::EdgeTexture(const std::string& name, const CRTVector& edgeColor, co
 	: Texture(name), edgeColor(edgeColor), innerColor(innerColor), edgeWidth(edgeWidth)
 {}
 
-CRTVector EdgeTexture::sample(float u, float v) const
+CRTVector EdgeTexture::sample(float u, float v, const CRTVector& bary) const
 {
-	if (u < edgeWidth || v < edgeWidth || abs(1 - u - v) < edgeWidth || 1 - u < edgeWidth || 1 - v < edgeWidth) {
+	if (bary.x < edgeWidth || bary.y < edgeWidth || abs(bary.z) < edgeWidth || 1 - bary.x < edgeWidth || 1 - bary.y < edgeWidth) {
 		return edgeColor;
 	}
-
 	return innerColor;
 }

@@ -8,5 +8,5 @@ class CheckerTexture : public Texture
 	float squareSize;
 public:
 	CheckerTexture(const std::string& name, const CRTVector& colorA, const CRTVector& colorB, float squareSize);
-	CRTVector sample(float u, float v) const override;
+	CRTVector sample(float u, float v, const CRTVector& bary) const override;
 };

@@ -7,6 +7,6 @@ struct Texture {
 
     Texture(const std::string& name) : name(name) {}
 
-    virtual CRTVector sample(float u, float v) const = 0;
+    virtual CRTVector sample(float u, float v, const CRTVector& bary) const = 0;
     virtual ~Texture() = default;
 };

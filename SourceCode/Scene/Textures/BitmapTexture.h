@@ -10,7 +10,7 @@ class BitmapTexture : public Texture
 	uint8_t* image;
 public:
 	BitmapTexture(const std::string& name, const std::string& imagePath);
-	CRTVector sample(float u, float v) const override;
+	CRTVector sample(float u, float v, const CRTVector& bary) const override;
 	~BitmapTexture();
 };
 

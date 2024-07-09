@@ -26,6 +26,7 @@ public:
 
 
 static const char* crtSceneSettings = "settings";
+static const char* crtSceneVersion = "version";
 static const char* crtSceneBGColor = "background_color";
 static const char* crtSceneImageSettings = "image_settings";
 static const char* crtSceneImageWidth = "width";
@@ -43,6 +44,7 @@ static const char* crtSceneLightIntensity = "intensity";
 static const char* crtSceneMeshMaterials = "materials";
 static const char* crtSceneMeshMaterialType = "type";
 static const char* crtSceneMeshTextureName = "albedo";
+static const char* crtSceneMeshAlbedo = "albedo";
 static const char* crtSceneMeshMaterialSmoothShading = "smooth_shading";
 static const char* crtSceneMeshMaterialIndex = "material_index";
 static const char* crtSceneMeshMaterialDiffuse = "diffuse";

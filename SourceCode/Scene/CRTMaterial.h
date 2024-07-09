@@ -10,6 +10,8 @@ enum class CRTMaterialType {
 
 struct CRTMaterial {
 	CRTMaterialType type;
+	bool constantAlbedo;
+	CRTVector albedo;
 	std::string textureName;
 	bool smoothShading;
 	float ior;

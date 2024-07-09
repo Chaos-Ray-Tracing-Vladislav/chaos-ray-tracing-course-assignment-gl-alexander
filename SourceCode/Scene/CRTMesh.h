@@ -7,8 +7,6 @@
 #include "Intersection.h"
 #include <unordered_map>
 
-static const CRTMaterial DEFAULT_MATERIAL{ CRTMaterialType::DIFFUSE, {0,0,1}, false };
-
 class CRTMesh
 {
 	std::vector<CRTVector> vertices;
@@ -24,6 +22,7 @@ class CRTMesh
 
 	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const;
 public:
+	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex);
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex);
 
 	Intersection intersectsRay(const CRTRay& ray) const;

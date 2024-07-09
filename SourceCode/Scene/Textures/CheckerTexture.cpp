@@ -4,7 +4,7 @@ CheckerTexture::CheckerTexture(const std::string& name, const CRTVector& colorA,
 	: Texture(name), colorA(colorA), colorB(colorB), squareSize(squareSize)
 {}
 
-CRTVector CheckerTexture::sample(float u, float v) const
+CRTVector CheckerTexture::sample(float u, float v, const CRTVector& bary) const
 {
 	unsigned squareX = u / squareSize;
 	unsigned squareY = v / squareSize;

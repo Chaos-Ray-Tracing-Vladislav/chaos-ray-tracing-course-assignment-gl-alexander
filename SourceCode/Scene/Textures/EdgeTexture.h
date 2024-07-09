@@ -9,5 +9,5 @@ class EdgeTexture : public Texture {
 public:
     EdgeTexture(const std::string& name, const CRTVector& edgeColor, const CRTVector& innerColor, float edgeWidth);
 
-    CRTVector sample(float u, float v) const override;
+    CRTVector sample(float u, float v, const CRTVector& bary) const override;
 };

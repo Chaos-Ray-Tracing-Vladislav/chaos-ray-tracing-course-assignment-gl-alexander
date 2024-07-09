@@ -10,7 +10,7 @@ BitmapTexture::BitmapTexture(const std::string& name, const std::string& imagePa
 	}
 }
 
-CRTVector BitmapTexture::sample(float u, float v) const
+CRTVector BitmapTexture::sample(float u, float v, const CRTVector& bary) const
 {
 	unsigned pixel_x = u * (float)width;
 	unsigned pixel_y = (1.0 - v) * (float)height;

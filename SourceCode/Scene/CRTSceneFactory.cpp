@@ -73,6 +73,11 @@ std::vector<CRTLight> CRTSceneFactory::parseLights(const rapidjson::Document& do
 void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, CRTCamera& camera) {
 	const Value& settingsVal = doc.FindMember(crtSceneSettings)->value;
 	if (!settingsVal.IsNull() && settingsVal.IsObject()) {
+		//const Value& sceneVersion = settingsVal.FindMember(crtSceneVersion)->value;
+		//if (!sceneVersion.IsNull() && sceneVersion.IsInt()) {
+		//	settings.version = sceneVersion.GetInt();
+		//}
+
 		const Value& bgColorValue = settingsVal.FindMember(crtSceneBGColor)->value;
 		assert(!bgColorValue.IsNull() && bgColorValue.IsArray());
 		settings.bgColor = loadVector(bgColorValue.GetArray());
@@ -139,10 +144,13 @@ CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
 	assert(!materialIndexVal.IsNull() && materialIndexVal.IsInt());
 
 	const Value& meshUVs = meshVal.FindMember(crtSceneUVs)->value;
-	assert(!meshUVs.IsNull() && meshUVs.IsArray());
-
+	if (!meshUVs.IsNull() && meshUVs.IsArray()) {
+		return CRTMesh(loadVertices(meshVertices.GetArray()),
+			loadVertices(meshUVs.GetArray()),
+			loadTriangleIndices(triangleVal.GetArray()),
+			materialIndexVal.GetInt());
+	}
 	return CRTMesh(loadVertices(meshVertices.GetArray()),
-		loadVertices(meshUVs.GetArray()),
 		loadTriangleIndices(triangleVal.GetArray()),
 		materialIndexVal.GetInt());
 }
@@ -165,7 +173,6 @@ CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
 	const Value& typeVal = matVal.FindMember(crtSceneMeshMaterialType)->value;
 	assert(!typeVal.IsNull() && typeVal.IsString());
 	const char* typeAsString = typeVal.GetString();
-	CRTMaterialType type = CRTMaterialType::DIFFUSE;
 	if (strcmp(typeAsString, crtSceneMeshMaterialDiffuse) == 0) {
 		material.type = CRTMaterialType::DIFFUSE;
 	}
@@ -183,10 +190,16 @@ CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
 	material.smoothShading = shadingVal.GetBool();
 
 	const Value& textureNameVal = matVal.FindMember(crtSceneMeshTextureName)->value;
-	assert(!textureNameVal.IsNull() && textureNameVal.IsString());
-	material.textureName = textureNameVal.GetString();
+	if (!textureNameVal.IsNull() && textureNameVal.IsArray()) {
+		material.albedo = loadVector(textureNameVal.GetArray());
+		material.constantAlbedo = true;
+	}
+	else if (!textureNameVal.IsNull() && textureNameVal.IsString()) {
+		material.textureName = textureNameVal.GetString();
+		material.constantAlbedo = false;
+	}
 
-	if (type == CRTMaterialType::REFRACTIVE) {
+	if (material.type == CRTMaterialType::REFRACTIVE) {
 		const Value& iorVal = matVal.FindMember(crtSceneMeshMaterialIndexOfRefraction)->value;
 		assert(!iorVal.IsNull() && iorVal.IsDouble());
 		material.ior = iorVal.GetFloat();

@@ -1,4 +1,5 @@
 #include "CRTScene.h"
+#include <stdexcept>
 
 CRTScene::CRTScene(const CRTCamera& camera, const CRTSettings& settings,
 	const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials,
@@ -9,6 +10,22 @@ CRTScene::CRTScene(const CRTCamera& camera, const CRTSettings& settings,
 int CRTScene::getObjectsCount() const
 {
 	return geometryObjects.size();
+}
+
+CRTVector CRTScene::sampleMaterial(const Intersection& data) const
+{
+	const CRTMaterial& material = materials[data.materialIndex];
+	if (material.constantAlbedo) {
+		return material.albedo;
+	}
+	else {
+		CRTVector uv = geometryObjects[data.hitObjectIndex].getUV(data);
+		std::shared_ptr<Texture> texture = getTexture(material.textureName);
+		if (texture == nullptr) {
+			throw std::logic_error("No such texture found");
+		}
+		return getTexture(material.textureName)->sample(uv.x, uv.y, data.barycentricCoordinates);
+	}
 }
 
 const CRTMesh& CRTScene::getGeometryObject(int index) const

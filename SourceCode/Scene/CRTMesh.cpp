@@ -31,6 +31,10 @@ void CRTMesh::calculateVertexNormals() {
 }
 
 
+CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex) :
+    CRTMesh(vertices, std::vector<CRTVector>(), triangleVertIndices, materialIndex) 
+{}
+
 CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex) :
     vertices(vertices), triangleVertIndices(triangleVertIndices), materialIndex(materialIndex), uvs(uvs)
 {

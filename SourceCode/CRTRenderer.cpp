@@ -95,8 +95,7 @@ CRTVector CRTRenderer::shadeDiffuse(const CRTRay& ray, const Intersection& data)
         CRTRay shadowRay{ data.hitPoint + normalVector * SHADOW_BIAS, lightDirection, RayType::SHADOW, ray.depth + 1 };
         if (!intersectsObject(shadowRay, sphereRadius)) {
             float multValue = light.getIntensity() / sphereArea * cosLaw;
-            CRTVector uv = scene->getGeometryObject(data.hitObjectIndex).getUV(data);
-            finalColor += scene->getTexture(material.textureName)->sample(uv.x, uv.y) * multValue;
+            finalColor += scene->sampleMaterial(data) * multValue;
         }
     }
     return CRTVector(clamp(finalColor.x, 0, 1), 
@@ -114,7 +113,7 @@ CRTVector CRTRenderer::shadeReflective(const CRTRay& ray, const Intersection& da
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
     CRTVector uv = scene->getGeometryObject(data.hitObjectIndex).getUV(data);
 
-    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->getTexture(material.textureName)->sample(uv.x, uv.y);
+    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->sampleMaterial(data);
 }
 
 CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& data) const {
@@ -154,12 +153,6 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
     float fresnel = 0.5f * pow(1.0f + dotPr, 5);
-    if (fresnel > 0.5) {
-        return shade(reflectedRay, rayTrace(reflectedRay));
-    }
-    else {
-        return shade(refractedRay, rayTrace(refractedRay));
-    }
     return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }
 
