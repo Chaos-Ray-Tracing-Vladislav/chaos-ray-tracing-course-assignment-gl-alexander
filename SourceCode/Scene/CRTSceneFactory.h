@@ -10,14 +10,15 @@ class CRTSceneFactory {
 	static CRTMatrix loadMatrix(const rapidjson::Value::ConstArray& arr);
 	static CRTLight loadLight(const rapidjson::Value::ConstObject& lightVal);
 
-	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr);
+	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr, AxisAlignedBoundingBox& AABB);
+	static std::vector<CRTVector> loadUVVertices(const rapidjson::Value::ConstArray& arr);
 	static std::vector<int> loadTriangleIndices(const rapidjson::Value::ConstArray& arr);
-	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal);
+	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal, AxisAlignedBoundingBox& AABB);
 	static CRTMaterial loadMaterial(const rapidjson::Value::ConstObject& matVal);
 
 	static std::vector<CRTLight> parseLights(const rapidjson::Document& doc);
 	static void parseSettings(const rapidjson::Document& doc, CRTSettings& settings, CRTCamera& camera);
-	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc);
+	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc, AxisAlignedBoundingBox& AABB);
 	static std::vector<CRTMaterial> parseMaterials(const rapidjson::Document& doc);
 
 public: 
@@ -31,6 +32,7 @@ static const char* crtSceneBGColor = "background_color";
 static const char* crtSceneImageSettings = "image_settings";
 static const char* crtSceneImageWidth = "width";
 static const char* crtSceneImageHeight = "height";
+static const char* crtSceneImageBucketSize = "bucket_size";
 static const char* crtSceneCamera = "camera";
 static const char* crtSceneCameraMatrix = "matrix";
 static const char* crtSceneCameraPosition = "position";

@@ -3,6 +3,8 @@
 #include <iostream>
 #include <climits>
 #include <assert.h>
+#include <thread>
+#include "Scene/CRTBucketQueue.h"
 
 static float clamp(float original, float start, float end) {
     if (original < start) return start;
@@ -37,6 +39,31 @@ CRTImage CRTRenderer::renderScene() const
         }
     }
     return image;
+}
+
+void CRTRenderer::renderRegionNoAABB(int x, int y, int width, int height, CRTImage& output) const
+{
+    for (int rowId = y; rowId < y + height; rowId++) {
+        for (int colId = x; colId < x + width; colId++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); // we generate the ray "on demand"
+            output[rowId][colId] = shade(ray, rayTrace(ray));
+        }
+    }
+}
+
+void CRTRenderer::renderRegion(int x, int y, int width, int height, CRTImage& output) const
+{
+    for (int rowId = y; rowId < y + height; rowId++) {
+        for (int colId = x; colId < x + width; colId++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); 
+            if (scene->getAABB().intersects(ray)) {
+                output[rowId][colId] = shade(ray, rayTrace(ray));
+            }
+            else {
+                output[rowId][colId] = scene->getSettings().bgColor;
+            }
+        }
+    }
 }
 
 Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
@@ -178,7 +205,6 @@ bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) con
     return false;
 }
 
-
 CRTImage CRTRenderer::renderSceneBarycentic() const
 {
     const unsigned imageHeight = scene->getSettings().imageSettings.height;
@@ -197,6 +223,108 @@ CRTImage CRTRenderer::renderSceneBarycentic() const
                 image[rowId][colId] = scene->getSettings().bgColor;
             }
         }
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderSinglethreaded() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+    renderRegionNoAABB(0, 0, imageWidth, imageHeight, image);
+    return image;
+}
+
+CRTImage CRTRenderer::renderByRegions() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+    int threadCount = std::thread::hardware_concurrency();
+    unsigned threadsPerSideY = sqrt(threadCount);
+    unsigned threadsPerSideX = threadCount / threadsPerSideY;
+    unsigned heightPerThread = imageHeight / threadsPerSideY;
+    unsigned widthPerThread = imageWidth / threadsPerSideX; // written like so to avoid the issue of having a non-perfect square number of threads
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < threadCount; i++) {
+        unsigned startX = (i * widthPerThread) % imageWidth;
+        unsigned startY = (i / threadsPerSideX) * heightPerThread;
+        threads.push_back(std::thread(&CRTRenderer::renderRegionNoAABB, this,
+           startX, startY, widthPerThread, heightPerThread, std::ref(image))
+        );
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderByBuckets() const
+{
+    if (scene->getSettings().imageSettings.bucketSize <= 0) { // the size is invalid
+        return renderByRegions();
+    }
+
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+
+    CRTBucketQueue queue(scene); // the constructor generates the regions
+
+    int threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < threadCount; i++) {
+        threads.push_back(std::thread([this, &queue, &image]() {
+            CRTRegion region;
+            while (true) {
+                if (!queue.getRegion(region)) { // if getRegion returns false, then there's no more buckets
+                    break;
+                }
+                renderRegionNoAABB(region.startX, region.startY, region.width, region.height, image);
+                }
+            }
+        ));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderWithAABB() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+
+    CRTBucketQueue queue(scene); // the constructor generates the regions
+
+    int threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < threadCount; i++) {
+        threads.push_back(std::thread([this, &queue, &image]() {
+            CRTRegion region;
+            while (true) {
+                if (!queue.getRegion(region)) { // if getRegion returns false, then there's no more buckets
+                    break;
+                }
+                renderRegion(region.startX, region.startY, region.width, region.height, image);
+            }
+            }
+        ));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
     }
     return image;
 }

@@ -91,6 +91,11 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 			settings.imageSettings.width = imageWidthVal.GetInt();
 			settings.imageSettings.height = imageHeightVal.GetInt();
 
+			const Value& imageBucketSize = imageSettingsVal.FindMember(crtSceneImageBucketSize)->value;
+			if (!imageBucketSize.IsNull() && imageBucketSize.IsInt()) {
+				settings.imageSettings.bucketSize = imageBucketSize.GetInt();
+			}
+
 			camera.setImageSettings(settings.imageSettings.width, settings.imageSettings.height);
 		}
 
@@ -107,7 +112,31 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 	}
 }
 
-std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr) {
+std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr, AxisAlignedBoundingBox& AABB) {
+	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
+	std::vector<CRTVector> result;
+	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
+	for (int i = 0; i < verticesCount; i++) {
+		size_t currentBatch = i * CRTVector::MEMBERS_COUNT;
+		CRTVector vec{
+		static_cast<float>(arr[currentBatch + 0].GetFloat()),
+		static_cast<float>(arr[currentBatch + 1].GetFloat()),
+		static_cast<float>(arr[currentBatch + 2].GetFloat())
+		};
+		AABB.max.x = std::max(vec.x, AABB.max.x);
+		AABB.max.y = std::max(vec.y, AABB.max.y);
+		AABB.max.z = std::max(vec.z, AABB.max.z);
+
+		AABB.min.x = std::min(vec.x, AABB.max.x);
+		AABB.min.y = std::min(vec.y, AABB.max.y);
+		AABB.min.z = std::min(vec.z, AABB.max.z);
+		result.push_back(vec);
+	}
+	return result;
+}
+
+std::vector<CRTVector> CRTSceneFactory::loadUVVertices(const rapidjson::Value::ConstArray& arr)
+{
 	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
 	std::vector<CRTVector> result;
 	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
@@ -133,7 +162,7 @@ std::vector<int> CRTSceneFactory::loadTriangleIndices(const Value::ConstArray& a
 	return result;
 }
 
-CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
+CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal, AxisAlignedBoundingBox& AABB) {
 	const Value& meshVertices = meshVal.FindMember(crtSceneVertices)->value;
 	assert(!meshVertices.IsNull() && meshVertices.IsArray());
 
@@ -145,24 +174,24 @@ CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
 
 	const Value& meshUVs = meshVal.FindMember(crtSceneUVs)->value;
 	if (!meshUVs.IsNull() && meshUVs.IsArray()) {
-		return CRTMesh(loadVertices(meshVertices.GetArray()),
-			loadVertices(meshUVs.GetArray()),
+		return CRTMesh(loadVertices(meshVertices.GetArray(), AABB),
+			loadUVVertices(meshUVs.GetArray()),
 			loadTriangleIndices(triangleVal.GetArray()),
 			materialIndexVal.GetInt());
 	}
-	return CRTMesh(loadVertices(meshVertices.GetArray()),
+	return CRTMesh(loadVertices(meshVertices.GetArray(), AABB),
 		loadTriangleIndices(triangleVal.GetArray()),
 		materialIndexVal.GetInt());
 }
 
-std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc) {
+std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc, AxisAlignedBoundingBox& AABB) {
 	std::vector<CRTMesh> geometryObjects;
 	const Value& objectsVal = doc.FindMember(crtSceneObjects)->value;
 	if (!objectsVal.IsNull() && objectsVal.IsArray()) {
 		size_t objectsCount = objectsVal.GetArray().Size();
 		for (int i = 0; i < objectsCount; i++) {
 			assert(!objectsVal.GetArray()[i].IsNull() && objectsVal.GetArray()[i].IsObject());
-			geometryObjects.push_back(loadMesh(objectsVal.GetArray()[i].GetObject()));
+			geometryObjects.push_back(loadMesh(objectsVal.GetArray()[i].GetObject(), AABB));
 		}
 	}
 	return geometryObjects;
@@ -230,10 +259,11 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	CRTSettings settings;
 	parseSettings(doc, settings, camera);
 
+	AxisAlignedBoundingBox AABB;
 	std::vector<CRTLight> lights = parseLights(doc);
 	std::vector<std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
 	std::vector<CRTMaterial> materials = parseMaterials(doc);
-	std::vector<CRTMesh> geometryObjects = parseObjects(doc);
+	std::vector<CRTMesh> geometryObjects = parseObjects(doc, AABB);
 
-	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights);
+	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights, AABB);
 }

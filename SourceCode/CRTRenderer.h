@@ -24,6 +24,9 @@ class CRTRenderer
 	CRTVector shadeReflective(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeRefractive(const CRTRay& ray, const Intersection& data) const;
 	bool intersectsObject(const CRTRay& ray, float distanceToLight) const;
+
+	void renderRegionNoAABB(int x, int y, int width, int height, CRTImage& output) const;
+	void renderRegion(int x, int y, int width, int height, CRTImage& output) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 
@@ -31,4 +34,11 @@ public:
 	void renderSceneBarycentic(const char* outputname) const;
 	CRTImage renderScene() const;
 	CRTImage renderSceneBarycentic() const;
+
+	// for testing purposes:
+	CRTImage renderSinglethreaded() const;
+	CRTImage renderByRegions() const;
+	CRTImage renderByBuckets() const;
+	CRTImage renderWithAABB() const;
+
 };
