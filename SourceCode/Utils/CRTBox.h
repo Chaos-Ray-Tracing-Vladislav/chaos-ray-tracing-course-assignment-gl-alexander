@@ -2,7 +2,7 @@
 #include "CRTVector.h"
 #include "CRTRay.h"
 
-struct AxisAlignedBoundingBox {
+struct CRTBox {
 	CRTVector min;
 	CRTVector max;
 

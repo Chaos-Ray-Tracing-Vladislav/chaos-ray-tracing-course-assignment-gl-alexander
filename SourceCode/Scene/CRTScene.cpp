@@ -3,7 +3,7 @@
 
 CRTScene::CRTScene(const CRTCamera& camera, const CRTSettings& settings,
 	const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials,
-	const std::vector<std::shared_ptr<Texture>>& textures, const std::vector<CRTLight>& lights, const AxisAlignedBoundingBox& AABB)
+	const std::vector<std::shared_ptr<Texture>>& textures, const std::vector<CRTLight>& lights, const CRTBox& AABB)
 	: camera(camera), settings(settings), geometryObjects(geometryObjects), materials(materials), lights(lights), textures(textures), AABB(AABB)
 {}
 
@@ -61,7 +61,7 @@ const std::vector<CRTLight>& CRTScene::getLights() const {
 	return lights;
 }
 
-const AxisAlignedBoundingBox& CRTScene::getAABB() const
+const CRTBox& CRTScene::getAABB() const
 {
 	return AABB;
 }

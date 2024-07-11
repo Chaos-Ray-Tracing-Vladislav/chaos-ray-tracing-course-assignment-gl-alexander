@@ -7,11 +7,11 @@
 #include "CRTSettings.h"
 #include "CRTLight.h"
 #include "Textures/Texture.h"
-#include "../Utils/AABB.h"
+#include "../Utils/CRTBox.h"
 
 class CRTScene
 {
-	AxisAlignedBoundingBox AABB;
+	CRTBox AABB;
 	std::vector<CRTMesh> geometryObjects;
 	std::vector<CRTMaterial> materials;
 	std::vector<std::shared_ptr<Texture>> textures;
@@ -26,7 +26,7 @@ public:
 	CRTScene(const CRTCamera& camera, const CRTSettings& settings, 
 		const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials, 
 		const std::vector<std::shared_ptr<Texture>>& textures, const std::vector<CRTLight>& lights,
-		const AxisAlignedBoundingBox& AABB);
+		const CRTBox& AABB);
 	
 	const CRTMesh& getGeometryObject(int index) const;
 	const CRTMaterial& getMaterial(int index) const;
@@ -37,5 +37,5 @@ public:
 	const CRTCamera& getCamera() const;
 	const CRTSettings& getSettings() const;
 	const std::vector<CRTLight>& getLights() const;
-	const AxisAlignedBoundingBox& getAABB() const;
+	const CRTBox& getAABB() const;
 };

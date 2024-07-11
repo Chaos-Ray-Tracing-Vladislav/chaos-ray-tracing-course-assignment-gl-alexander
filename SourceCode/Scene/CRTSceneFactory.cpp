@@ -112,7 +112,7 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 	}
 }
 
-std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr, AxisAlignedBoundingBox& AABB) {
+std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr, CRTBox& AABB) {
 	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
 	std::vector<CRTVector> result;
 	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
@@ -127,9 +127,9 @@ std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& ar
 		AABB.max.y = std::max(vec.y, AABB.max.y);
 		AABB.max.z = std::max(vec.z, AABB.max.z);
 
-		AABB.min.x = std::min(vec.x, AABB.max.x);
-		AABB.min.y = std::min(vec.y, AABB.max.y);
-		AABB.min.z = std::min(vec.z, AABB.max.z);
+		AABB.min.x = std::min(vec.x, AABB.min.x);
+		AABB.min.y = std::min(vec.y, AABB.min.y);
+		AABB.min.z = std::min(vec.z, AABB.min.z);
 		result.push_back(vec);
 	}
 	return result;
@@ -162,7 +162,7 @@ std::vector<int> CRTSceneFactory::loadTriangleIndices(const Value::ConstArray& a
 	return result;
 }
 
-CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal, AxisAlignedBoundingBox& AABB) {
+CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal, CRTBox& AABB) {
 	const Value& meshVertices = meshVal.FindMember(crtSceneVertices)->value;
 	assert(!meshVertices.IsNull() && meshVertices.IsArray());
 
@@ -184,7 +184,7 @@ CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal, AxisAligned
 		materialIndexVal.GetInt());
 }
 
-std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc, AxisAlignedBoundingBox& AABB) {
+std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc, CRTBox& AABB) {
 	std::vector<CRTMesh> geometryObjects;
 	const Value& objectsVal = doc.FindMember(crtSceneObjects)->value;
 	if (!objectsVal.IsNull() && objectsVal.IsArray()) {
@@ -259,7 +259,7 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	CRTSettings settings;
 	parseSettings(doc, settings, camera);
 
-	AxisAlignedBoundingBox AABB;
+	CRTBox AABB;
 	std::vector<CRTLight> lights = parseLights(doc);
 	std::vector<std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
 	std::vector<CRTMaterial> materials = parseMaterials(doc);

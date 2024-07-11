@@ -59,9 +59,6 @@ void CRTRenderer::renderRegion(int x, int y, int width, int height, CRTImage& ou
             if (scene->getAABB().intersects(ray)) {
                 output[rowId][colId] = shade(ray, rayTrace(ray));
             }
-            else {
-                output[rowId][colId] = scene->getSettings().bgColor;
-            }
         }
     }
 }

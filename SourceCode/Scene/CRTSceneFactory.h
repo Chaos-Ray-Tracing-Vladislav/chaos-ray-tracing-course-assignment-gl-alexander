@@ -10,15 +10,15 @@ class CRTSceneFactory {
 	static CRTMatrix loadMatrix(const rapidjson::Value::ConstArray& arr);
 	static CRTLight loadLight(const rapidjson::Value::ConstObject& lightVal);
 
-	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr, AxisAlignedBoundingBox& AABB);
+	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr, CRTBox& AABB);
 	static std::vector<CRTVector> loadUVVertices(const rapidjson::Value::ConstArray& arr);
 	static std::vector<int> loadTriangleIndices(const rapidjson::Value::ConstArray& arr);
-	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal, AxisAlignedBoundingBox& AABB);
+	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal, CRTBox& AABB);
 	static CRTMaterial loadMaterial(const rapidjson::Value::ConstObject& matVal);
 
 	static std::vector<CRTLight> parseLights(const rapidjson::Document& doc);
 	static void parseSettings(const rapidjson::Document& doc, CRTSettings& settings, CRTCamera& camera);
-	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc, AxisAlignedBoundingBox& AABB);
+	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc, CRTBox& AABB);
 	static std::vector<CRTMaterial> parseMaterials(const rapidjson::Document& doc);
 
 public: 
