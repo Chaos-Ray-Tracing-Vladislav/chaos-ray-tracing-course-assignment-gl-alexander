@@ -1,31 +1,30 @@
 #include "BitmapTexture.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include <algorithm>
 
-BitmapTexture::BitmapTexture(const std::string& name, const std::string& imagePath) : Texture(name)
+BitmapTexture::BitmapTexture(const std::string& imagePath)
 {
-	image = stbi_load(imagePath.c_str(), &width, &height, &channels, 0);
-	if (image == nullptr) {
+	uint8_t* image = stbi_load(imagePath.c_str(), &width, &height, &channels, 0);
+	if (image) {
+		pixels.resize(width * height);
+		for (int i = 0; i < width * height; ++i) {
+			// To save resources on deletion, we can parse the colors and free the stbi_image directly when constructing
+			float multiValue = 1.0f / (float)MAX_COLOR_COMPONENT;
+			pixels[i] = { image[channels * i] * multiValue,  
+				image[channels * i + 1] * multiValue,
+				image[channels * i + 2] * multiValue };
+		}
+		stbi_image_free(image);
+	}
+	else {
 		throw std::invalid_argument("No such image found");
 	}
 }
 
 CRTVector BitmapTexture::sample(float u, float v, const CRTVector& bary) const
 {
-	unsigned pixel_x = u * (float)width;
-	unsigned pixel_y = (1.0 - v) * (float)height;
-	unsigned bytePerPixel = channels;
-	unsigned char* pixelOffset = image + (pixel_x + width * pixel_y) * bytePerPixel;
-	float multiValue = 1.0f / MAX_COLOR_COMPONENT;
-	float r = (float)pixelOffset[0] * multiValue;
-	float g = (float)pixelOffset[1] * multiValue;
-	float b = (float)pixelOffset[2] * multiValue;
-	return CRTVector(r, g, b);
-}
-
-BitmapTexture::~BitmapTexture()
-{
-	stbi_image_free(image);
-	width = height = channels = 0;
-	image = nullptr;
+	int x = std::clamp(static_cast<int>(u * width), 0, width - 1);
+	int y = std::clamp(static_cast<int>((1 - v) * height), 0, height - 1);
+	return pixels[y * width + x];
 }

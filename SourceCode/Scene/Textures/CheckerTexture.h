@@ -1,12 +1,12 @@
 #pragma once
-#include "Texture.h"
+#include "../../Utils/CRTVector.h"
 
-class CheckerTexture : public Texture
+class CheckerTexture
 {
 	CRTVector colorA;
 	CRTVector colorB;
 	float squareSize;
 public:
-	CheckerTexture(const std::string& name, const CRTVector& colorA, const CRTVector& colorB, float squareSize);
-	CRTVector sample(float u, float v, const CRTVector& bary) const override;
+	CheckerTexture(const CRTVector& colorA, const CRTVector& colorB, float squareSize);
+	CRTVector sample(float u, float v, const CRTVector& bary) const;
 };

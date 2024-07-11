@@ -1,10 +1,10 @@
 #pragma once
-#include "Texture.h"
+#include "../../Utils/CRTVector.h"
 
-class ConstantTexture : public Texture
+class ConstantTexture
 {
 	CRTVector color;
 public:
-	ConstantTexture(const std::string& name, const CRTVector& color);
-	CRTVector sample(float u, float v, const CRTVector& bary) const override;
+	ConstantTexture(const CRTVector& color);
+	CRTVector sample(float u, float v, const CRTVector& bary) const;
 };

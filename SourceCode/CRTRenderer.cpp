@@ -119,7 +119,7 @@ CRTVector CRTRenderer::shadeDiffuse(const CRTRay& ray, const Intersection& data)
         CRTRay shadowRay{ data.hitPoint + normalVector * SHADOW_BIAS, lightDirection, RayType::SHADOW, ray.depth + 1 };
         if (!intersectsObject(shadowRay, sphereRadius)) {
             float multValue = light.getIntensity() / sphereArea * cosLaw;
-            finalColor += scene->sampleMaterial(data) * multValue;
+            finalColor += scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data) * multValue;
         }
     }
     return CRTVector(clamp(finalColor.x, 0, 1), 
@@ -137,7 +137,7 @@ CRTVector CRTRenderer::shadeReflective(const CRTRay& ray, const Intersection& da
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
     CRTVector uv = scene->getGeometryObject(data.hitObjectIndex).getUV(data);
 
-    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->sampleMaterial(data);
+    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data);
 }
 
 CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& data) const {
@@ -177,11 +177,11 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
     // Improved Fresnel calculation using Schlick's approximation
-    //float R0 = pow((n1 - n2) / (n1 + n2), 2);
-    //float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
+    float R0 = pow((n1 - n2) / (n1 + n2), 2);
+    float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
 
     // Simple Fresnel calculation
-    float fresnel = 0.5 * pow(1.0f - cosIncomming, 5);
+    // float fresnel = 0.5 * pow(1.0f - cosIncomming, 5);
 
     return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }

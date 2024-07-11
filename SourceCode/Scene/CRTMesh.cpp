@@ -1,4 +1,5 @@
 #include "CRTMesh.h"
+#include <assert.h>
 
 void CRTMesh::calculateFaceNormals() {
     for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
@@ -95,6 +96,19 @@ CRTVector CRTMesh::getUV(const Intersection& data) const
     return uvs[v1_index] * data.barycentricCoordinates.x
         + uvs[v2_index] * data.barycentricCoordinates.y
         + uvs[v0_index] * data.barycentricCoordinates.z;
+}
+
+CRTVector CRTMesh::sampleMaterial(const CRTMaterial& material, const Intersection& data) const
+{
+    if (material.constantAlbedo) {
+        return material.albedo;
+    }
+    else {
+        assert(material.texture != nullptr);
+        CRTVector uv = getUV(data);
+        // std::variant allows the type safe std::visit
+        return std::visit([&uv, &data](const auto& t) { return t.sample(uv.x, uv.y, data.barycentricCoordinates); }, *material.texture);
+    }
 }
 
 

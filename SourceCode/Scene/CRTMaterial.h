@@ -1,5 +1,7 @@
 #pragma once
 #include "../Utils/CRTVector.h"
+#include "Textures/Texture.h"
+#include <memory>
 #include <string>
 
 enum class CRTMaterialType {
@@ -12,7 +14,7 @@ struct CRTMaterial {
 	CRTMaterialType type;
 	bool constantAlbedo;
 	CRTVector albedo;
-	std::string textureName;
+	std::shared_ptr<Texture> texture;
 	bool smoothShading;
 	float ior;
 };
