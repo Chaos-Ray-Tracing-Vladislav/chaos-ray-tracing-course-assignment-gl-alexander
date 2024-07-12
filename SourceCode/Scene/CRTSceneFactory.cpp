@@ -1,4 +1,6 @@
 #include "CRTSceneFactory.h"
+
+#define _SILENCE_ALL_CXX17_DEPRECATION_WARNINGS
 using namespace rapidjson;
 
 static Document getJsonDocument(const char* filename) {
@@ -14,6 +16,8 @@ static Document getJsonDocument(const char* filename) {
 	doc.ParseStream(isw);
 	return doc;
 }
+
+
 
 CRTVector CRTSceneFactory::loadVector(const Value::ConstArray& arr) {
 	assert(arr.Size() == 3);
@@ -91,6 +95,11 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 			settings.imageSettings.width = imageWidthVal.GetInt();
 			settings.imageSettings.height = imageHeightVal.GetInt();
 
+			const Value& imageBucketSize = imageSettingsVal.FindMember(crtSceneImageBucketSize)->value;
+			if (!imageBucketSize.IsNull() && imageBucketSize.IsInt()) {
+				settings.imageSettings.bucketSize = imageBucketSize.GetInt();
+			}
+
 			camera.setImageSettings(settings.imageSettings.width, settings.imageSettings.height);
 		}
 
@@ -107,7 +116,31 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 	}
 }
 
-std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr) {
+std::vector<CRTVector> CRTSceneFactory::loadVertices(const Value::ConstArray& arr, CRTBox& AABB) {
+	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
+	std::vector<CRTVector> result;
+	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
+	for (int i = 0; i < verticesCount; i++) {
+		size_t currentBatch = i * CRTVector::MEMBERS_COUNT;
+		CRTVector vec{
+		static_cast<float>(arr[currentBatch + 0].GetFloat()),
+		static_cast<float>(arr[currentBatch + 1].GetFloat()),
+		static_cast<float>(arr[currentBatch + 2].GetFloat())
+		};
+		AABB.max.x = std::max(vec.x, AABB.max.x);
+		AABB.max.y = std::max(vec.y, AABB.max.y);
+		AABB.max.z = std::max(vec.z, AABB.max.z);
+
+		AABB.min.x = std::min(vec.x, AABB.min.x);
+		AABB.min.y = std::min(vec.y, AABB.min.y);
+		AABB.min.z = std::min(vec.z, AABB.min.z);
+		result.push_back(vec);
+	}
+	return result;
+}
+
+std::vector<CRTVector> CRTSceneFactory::loadUVVertices(const rapidjson::Value::ConstArray& arr)
+{
 	size_t verticesCount = arr.Size() / CRTVector::MEMBERS_COUNT;
 	std::vector<CRTVector> result;
 	assert(arr.Size() % CRTVector::MEMBERS_COUNT == 0);
@@ -133,7 +166,7 @@ std::vector<int> CRTSceneFactory::loadTriangleIndices(const Value::ConstArray& a
 	return result;
 }
 
-CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
+CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal, CRTBox& AABB) {
 	const Value& meshVertices = meshVal.FindMember(crtSceneVertices)->value;
 	assert(!meshVertices.IsNull() && meshVertices.IsArray());
 
@@ -145,30 +178,30 @@ CRTMesh CRTSceneFactory::loadMesh(const Value::ConstObject& meshVal) {
 
 	const Value& meshUVs = meshVal.FindMember(crtSceneUVs)->value;
 	if (!meshUVs.IsNull() && meshUVs.IsArray()) {
-		return CRTMesh(loadVertices(meshVertices.GetArray()),
-			loadVertices(meshUVs.GetArray()),
+		return CRTMesh(loadVertices(meshVertices.GetArray(), AABB),
+			loadUVVertices(meshUVs.GetArray()),
 			loadTriangleIndices(triangleVal.GetArray()),
 			materialIndexVal.GetInt());
 	}
-	return CRTMesh(loadVertices(meshVertices.GetArray()),
+	return CRTMesh(loadVertices(meshVertices.GetArray(), AABB),
 		loadTriangleIndices(triangleVal.GetArray()),
 		materialIndexVal.GetInt());
 }
 
-std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc) {
+std::vector<CRTMesh> CRTSceneFactory::parseObjects(const Document& doc, CRTBox& AABB) {
 	std::vector<CRTMesh> geometryObjects;
 	const Value& objectsVal = doc.FindMember(crtSceneObjects)->value;
 	if (!objectsVal.IsNull() && objectsVal.IsArray()) {
 		size_t objectsCount = objectsVal.GetArray().Size();
 		for (int i = 0; i < objectsCount; i++) {
 			assert(!objectsVal.GetArray()[i].IsNull() && objectsVal.GetArray()[i].IsObject());
-			geometryObjects.push_back(loadMesh(objectsVal.GetArray()[i].GetObject()));
+			geometryObjects.push_back(loadMesh(objectsVal.GetArray()[i].GetObject(), AABB));
 		}
 	}
 	return geometryObjects;
 }
 
-CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
+CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal, const TextureMap& textures) {
 	CRTMaterial material;
 	const Value& typeVal = matVal.FindMember(crtSceneMeshMaterialType)->value;
 	assert(!typeVal.IsNull() && typeVal.IsString());
@@ -195,7 +228,7 @@ CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
 		material.constantAlbedo = true;
 	}
 	else if (!textureNameVal.IsNull() && textureNameVal.IsString()) {
-		material.textureName = textureNameVal.GetString();
+		material.texture = textures.at(textureNameVal.GetString());
 		material.constantAlbedo = false;
 	}
 
@@ -208,7 +241,7 @@ CRTMaterial CRTSceneFactory::loadMaterial(const Value::ConstObject& matVal) {
 	return material;
 }
 
-std::vector<CRTMaterial> CRTSceneFactory::parseMaterials(const rapidjson::Document& doc)
+std::vector<CRTMaterial> CRTSceneFactory::parseMaterials(const rapidjson::Document& doc, const TextureMap& textures)
 {
 	std::vector<CRTMaterial> materials;
 	const Value& materialsVal = doc.FindMember(crtSceneMeshMaterials)->value;
@@ -216,7 +249,7 @@ std::vector<CRTMaterial> CRTSceneFactory::parseMaterials(const rapidjson::Docume
 		size_t materialsCount = materialsVal.GetArray().Size();
 		for (int i = 0; i < materialsCount; i++) {
 			assert(!materialsVal.GetArray()[i].IsNull() && materialsVal.GetArray()[i].IsObject());
-			materials.push_back(loadMaterial(materialsVal.GetArray()[i].GetObject()));
+			materials.push_back(loadMaterial(materialsVal.GetArray()[i].GetObject(), textures));
 		}
 	}
 	return materials;
@@ -230,10 +263,11 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	CRTSettings settings;
 	parseSettings(doc, settings, camera);
 
+	CRTBox AABB;
 	std::vector<CRTLight> lights = parseLights(doc);
-	std::vector<std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
-	std::vector<CRTMaterial> materials = parseMaterials(doc);
-	std::vector<CRTMesh> geometryObjects = parseObjects(doc);
+	std::unordered_map<std::string, std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
+	std::vector<CRTMaterial> materials = parseMaterials(doc, textures);
+	std::vector<CRTMesh> geometryObjects = parseObjects(doc, AABB);
 
-	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights);
+	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights, AABB);
 }

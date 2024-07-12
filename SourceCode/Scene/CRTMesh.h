@@ -1,6 +1,5 @@
 #pragma once
 #include <vector>
-#include <tuple>
 #include "../Utils/CRTTriangle.h"
 #include "../Utils/CRTRay.h"
 #include "CRTMaterial.h"
@@ -28,6 +27,7 @@ public:
 	Intersection intersectsRay(const CRTRay& ray) const;
 
 	CRTVector getUV(const Intersection& data) const;
+	CRTVector sampleMaterial(const CRTMaterial& material, const Intersection& data) const;
 
 	int getMaterialIndex() const;
 };

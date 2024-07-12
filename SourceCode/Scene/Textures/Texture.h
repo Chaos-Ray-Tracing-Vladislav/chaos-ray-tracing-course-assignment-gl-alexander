@@ -1,12 +1,9 @@
 #pragma once
-#include <string>
-#include "../../Utils/CRTVector.h"
+#include "EdgeTexture.h"
+#include "CheckerTexture.h"
+#include "BitmapTexture.h"
+#include "ConstantTexture.h"
+#include <variant>
+#include <iostream>
 
-struct Texture {
-    std::string name;
-
-    Texture(const std::string& name) : name(name) {}
-
-    virtual CRTVector sample(float u, float v, const CRTVector& bary) const = 0;
-    virtual ~Texture() = default;
-};
+using Texture = std::variant<ConstantTexture, EdgeTexture, CheckerTexture, BitmapTexture>;

@@ -5,20 +5,24 @@
 #include "rapidjson/document.h"
 #include "rapidjson/istreamwrapper.h"
 
+using TextureMap = std::unordered_map<std::string, std::shared_ptr<Texture>>;
+
 class CRTSceneFactory {
+
 	static CRTVector loadVector(const rapidjson::Value::ConstArray& arr);
 	static CRTMatrix loadMatrix(const rapidjson::Value::ConstArray& arr);
 	static CRTLight loadLight(const rapidjson::Value::ConstObject& lightVal);
 
-	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr);
+	static std::vector<CRTVector> loadVertices(const rapidjson::Value::ConstArray& arr, CRTBox& AABB);
+	static std::vector<CRTVector> loadUVVertices(const rapidjson::Value::ConstArray& arr);
 	static std::vector<int> loadTriangleIndices(const rapidjson::Value::ConstArray& arr);
-	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal);
-	static CRTMaterial loadMaterial(const rapidjson::Value::ConstObject& matVal);
+	static CRTMesh loadMesh(const rapidjson::Value::ConstObject& meshVal, CRTBox& AABB);
+	static CRTMaterial loadMaterial(const rapidjson::Value::ConstObject& matVal, const TextureMap& textures);
 
 	static std::vector<CRTLight> parseLights(const rapidjson::Document& doc);
 	static void parseSettings(const rapidjson::Document& doc, CRTSettings& settings, CRTCamera& camera);
-	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc);
-	static std::vector<CRTMaterial> parseMaterials(const rapidjson::Document& doc);
+	static std::vector<CRTMesh> parseObjects(const rapidjson::Document& doc, CRTBox& AABB);
+	static std::vector<CRTMaterial> parseMaterials(const rapidjson::Document& doc, const TextureMap& textures);
 
 public: 
 	static CRTScene* factory(const char* filename);
@@ -31,6 +35,7 @@ static const char* crtSceneBGColor = "background_color";
 static const char* crtSceneImageSettings = "image_settings";
 static const char* crtSceneImageWidth = "width";
 static const char* crtSceneImageHeight = "height";
+static const char* crtSceneImageBucketSize = "bucket_size";
 static const char* crtSceneCamera = "camera";
 static const char* crtSceneCameraMatrix = "matrix";
 static const char* crtSceneCameraPosition = "position";

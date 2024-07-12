@@ -3,6 +3,8 @@
 #include <iostream>
 #include <climits>
 #include <assert.h>
+#include <thread>
+#include "Scene/CRTBucketQueue.h"
 
 static float clamp(float original, float start, float end) {
     if (original < start) return start;
@@ -37,6 +39,28 @@ CRTImage CRTRenderer::renderScene() const
         }
     }
     return image;
+}
+
+void CRTRenderer::renderRegionNoAABB(int x, int y, int width, int height, CRTImage& output) const
+{
+    for (int rowId = y; rowId < y + height; rowId++) {
+        for (int colId = x; colId < x + width; colId++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); // we generate the ray "on demand"
+            output[rowId][colId] = shade(ray, rayTrace(ray));
+        }
+    }
+}
+
+void CRTRenderer::renderRegion(int x, int y, int width, int height, CRTImage& output) const
+{
+    for (int rowId = y; rowId < y + height; rowId++) {
+        for (int colId = x; colId < x + width; colId++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); 
+            if (scene->getAABB().intersects(ray)) {
+                output[rowId][colId] = shade(ray, rayTrace(ray));
+            }
+        }
+    }
 }
 
 Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
@@ -95,7 +119,7 @@ CRTVector CRTRenderer::shadeDiffuse(const CRTRay& ray, const Intersection& data)
         CRTRay shadowRay{ data.hitPoint + normalVector * SHADOW_BIAS, lightDirection, RayType::SHADOW, ray.depth + 1 };
         if (!intersectsObject(shadowRay, sphereRadius)) {
             float multValue = light.getIntensity() / sphereArea * cosLaw;
-            finalColor += scene->sampleMaterial(data) * multValue;
+            finalColor += scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data) * multValue;
         }
     }
     return CRTVector(clamp(finalColor.x, 0, 1), 
@@ -113,7 +137,7 @@ CRTVector CRTRenderer::shadeReflective(const CRTRay& ray, const Intersection& da
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
     CRTVector uv = scene->getGeometryObject(data.hitObjectIndex).getUV(data);
 
-    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->sampleMaterial(data);
+    return shade(reflectedRay, rayTrace(reflectedRay)) * scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data);
 }
 
 CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& data) const {
@@ -132,14 +156,14 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     float cosIncomming = -dotPr;
     float sinIncomming = 1.0f - cosIncomming * cosIncomming;
 
-    if (sinIncomming >= ((n2 * n2) / (n1 * n1))) { // total internal reflection
+    if (sinIncomming > ((n2 * n2) / (n1 * n1))) { // total internal reflection
         CRTVector reflectedDirection = reflect(ray.direction, normalVector);
         CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
         return shade(reflectedRay, rayTrace(reflectedRay));
     }
 
-    float sinOutcomming = sqrt(sinIncomming) * n1 / n2;
-    float cosOutcomming = sqrt(1.0f - sinOutcomming * sinOutcomming);
+    float sinOutcomming = (n1 / n2) * sqrt(std::max(0.0f, 1.0f - cosIncomming * cosIncomming));
+    float cosOutcomming = sqrt(std::max(0.0f, 1.0f - sinOutcomming * sinOutcomming));
 
     CRTVector A = cosOutcomming * (-normalVector);
     CRTVector C = ray.direction + (cosIncomming * normalVector);
@@ -152,9 +176,16 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     CRTVector reflectedDirection = reflect(ray.direction, normalVector);
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
-    float fresnel = 0.5f * pow(1.0f + dotPr, 5);
+    // Improved Fresnel calculation using Schlick's approximation
+    float R0 = pow((n1 - n2) / (n1 + n2), 2);
+    float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
+
+    // Simple Fresnel calculation
+    // float fresnel = 0.5 * pow(1.0f - cosIncomming, 5);
+
     return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }
+
 
 bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) const
 {
@@ -171,7 +202,6 @@ bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) con
     return false;
 }
 
-
 CRTImage CRTRenderer::renderSceneBarycentic() const
 {
     const unsigned imageHeight = scene->getSettings().imageSettings.height;
@@ -182,18 +212,7 @@ CRTImage CRTRenderer::renderSceneBarycentic() const
     Intersection intersection;
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            intersection.triangleIndex = NO_HIT_INDEX;
-            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); // we generate the ray "on demand"
-            float minDistanceToCamera = FLT_MAX;
-            for (int i = 0; i < scene->getObjectsCount(); i++) {
-                intersection = scene->getGeometryObject(i).intersectsRay(ray);
-                if (intersection.triangleIndex != NO_HIT_INDEX) {
-                    double distanceToCamera = (intersection.hitPoint - scene->getCamera().getPosition()).length();
-                    if (distanceToCamera < minDistanceToCamera) {
-                        minDistanceToCamera = distanceToCamera;
-                    }
-                }
-            }
+            intersection = rayTrace(scene->getCamera().getRayForPixel(rowId, colId));
             if (intersection.triangleIndex != NO_HIT_INDEX) {
                 image[rowId][colId] = intersection.barycentricCoordinates;
             }
@@ -201,6 +220,108 @@ CRTImage CRTRenderer::renderSceneBarycentic() const
                 image[rowId][colId] = scene->getSettings().bgColor;
             }
         }
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderSinglethreaded() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+    renderRegionNoAABB(0, 0, imageWidth, imageHeight, image);
+    return image;
+}
+
+CRTImage CRTRenderer::renderByRegions() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+    int threadCount = std::thread::hardware_concurrency();
+    unsigned threadsPerSideY = sqrt(threadCount);
+    unsigned threadsPerSideX = threadCount / threadsPerSideY;
+    unsigned heightPerThread = imageHeight / threadsPerSideY;
+    unsigned widthPerThread = imageWidth / threadsPerSideX; // written like so to avoid the issue of having a non-perfect square number of threads
+
+    std::vector<std::thread> threads;
+    for (int i = 0; i < threadCount; i++) {
+        unsigned startX = (i * widthPerThread) % imageWidth;
+        unsigned startY = (i / threadsPerSideX) * heightPerThread;
+        threads.push_back(std::thread(&CRTRenderer::renderRegionNoAABB, this,
+           startX, startY, widthPerThread, heightPerThread, std::ref(image))
+        );
+    }
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderByBuckets() const
+{
+    if (scene->getSettings().imageSettings.bucketSize <= 0) { // the size is invalid
+        return renderByRegions();
+    }
+
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+
+    CRTBucketQueue queue(scene); // the constructor generates the regions
+
+    int threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < threadCount; i++) {
+        threads.push_back(std::thread([this, &queue, &image]() {
+            CRTRegion region;
+            while (true) {
+                if (!queue.getRegion(region)) { // if getRegion returns false, then there's no more buckets
+                    break;
+                }
+                renderRegionNoAABB(region.startX, region.startY, region.width, region.height, image);
+                }
+            }
+        ));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderWithAABB() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+
+    CRTBucketQueue queue(scene); // the constructor generates the regions
+
+    int threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < threadCount; i++) {
+        threads.push_back(std::thread([this, &queue, &image]() {
+            CRTRegion region;
+            while (true) {
+                if (!queue.getRegion(region)) { // if getRegion returns false, then there's no more buckets
+                    break;
+                }
+                renderRegion(region.startX, region.startY, region.width, region.height, image);
+            }
+            }
+        ));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
     }
     return image;
 }

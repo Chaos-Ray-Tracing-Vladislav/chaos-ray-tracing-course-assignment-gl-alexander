@@ -4,6 +4,7 @@
 struct CRTImageSettings {
 	unsigned width;
 	unsigned height;
+	unsigned bucketSize;
 };
 
 struct CRTSettings

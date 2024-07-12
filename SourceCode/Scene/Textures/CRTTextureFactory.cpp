@@ -11,37 +11,39 @@ static CRTVector loadVector(const Value::ConstArray& arr) {
 	return vec;
 }
 
-std::shared_ptr<Texture> CRTTextureFactory::loadTexture(const rapidjson::Value::ConstObject& textureVal)
+void CRTTextureFactory::loadTexture(const rapidjson::Value::ConstObject& textureVal, std::unordered_map<std::string, std::shared_ptr<Texture>>& textures)
 {
+	const Value& nameVal = textureVal.FindMember(crtSceneTextureName)->value;
+	assert(!nameVal.IsNull() && nameVal.IsString());
+
 	const Value& typeVal = textureVal.FindMember(crtSceneTextureType)->value;
 	assert(!typeVal.IsNull() && typeVal.IsString());
+
 	std::string type = typeVal.GetString();
+	std::shared_ptr<Texture> loadedTexture;
 	if (type == crtSceneTextureAlbedo) {
-		return loadAlbedo(textureVal);
+		loadedTexture = loadAlbedo(textureVal);
 	}
 	else if (type == crtSceneTextureEdges) {
-		return loadEdges(textureVal);
+		loadedTexture = loadEdges(textureVal);
 	}
 	else if (type == crtSceneTextureChecker) {
-		return loadChecker(textureVal);
+		loadedTexture = loadChecker(textureVal);
 	}
 	else if (type == crtSceneTextureBitmap) {
-		return loadBitmap(textureVal);
+		loadedTexture = loadBitmap(textureVal);
 	}
 	else {
 		assert(false);
 	}
-	return nullptr;
+	textures[nameVal.GetString()] = loadedTexture;
 }
 
 std::shared_ptr<Texture> CRTTextureFactory::loadAlbedo(const rapidjson::Value::ConstObject& textureObj)
 {
-	const Value& nameVal = textureObj.FindMember(crtSceneTextureName)->value;
-	assert(!nameVal.IsNull() && nameVal.IsString());
-
 	const Value& albedoVal = textureObj.FindMember(crtSceneTextureAlbedoVector)->value;
 	assert(!albedoVal.IsNull() && albedoVal.IsArray());
-	return std::make_shared<ConstantTexture>(nameVal.GetString(), loadVector(albedoVal.GetArray()));
+	return std::make_shared<Texture>(ConstantTexture(loadVector(albedoVal.GetArray())));
 }
 
 std::shared_ptr<Texture> CRTTextureFactory::loadEdges(const rapidjson::Value::ConstObject& textureObj)
@@ -57,10 +59,10 @@ std::shared_ptr<Texture> CRTTextureFactory::loadEdges(const rapidjson::Value::Co
 
 	const Value& edgeWidth = textureObj.FindMember(crtSceneTextureEdgeWidth)->value;
 	assert(!edgeWidth.IsNull() && edgeWidth.IsFloat());
-	return std::make_shared<EdgeTexture>(nameVal.GetString(), 
-		loadVector(colorEdge.GetArray()), 
+	return std::make_shared<Texture>(
+		EdgeTexture(loadVector(colorEdge.GetArray()), 
 		loadVector(colorInner.GetArray()), 
-		edgeWidth.GetFloat());
+		edgeWidth.GetFloat()));
 }
 
 std::shared_ptr<Texture> CRTTextureFactory::loadChecker(const rapidjson::Value::ConstObject& textureObj)
@@ -76,10 +78,10 @@ std::shared_ptr<Texture> CRTTextureFactory::loadChecker(const rapidjson::Value::
 
 	const Value& squareSize = textureObj.FindMember(crtSceneTextureCheckerSquareSize)->value;
 	assert(!squareSize.IsNull() && squareSize.IsFloat());
-	return std::make_shared<CheckerTexture>(nameVal.GetString(),
-		loadVector(colorA.GetArray()),
+	return std::make_shared<Texture>(
+		CheckerTexture(loadVector(colorA.GetArray()),
 		loadVector(colorB.GetArray()),
-		squareSize.GetFloat());
+		squareSize.GetFloat()));
 }
 
 std::shared_ptr<Texture> CRTTextureFactory::loadBitmap(const rapidjson::Value::ConstObject& textureObj)
@@ -90,18 +92,18 @@ std::shared_ptr<Texture> CRTTextureFactory::loadBitmap(const rapidjson::Value::C
 	const Value& pathToImage = textureObj.FindMember(crtSceneTextureBitmapPath)->value;
 	assert(!pathToImage.IsNull() && pathToImage.IsString());
 
-	return std::make_shared<BitmapTexture>(nameVal.GetString(), pathToImage.GetString());
+	return std::make_shared<Texture>(BitmapTexture(pathToImage.GetString()));
 }
 
-std::vector<std::shared_ptr<Texture>> CRTTextureFactory::parseTextures(const rapidjson::Document& doc)
+std::unordered_map<std::string, std::shared_ptr<Texture>> CRTTextureFactory::parseTextures(const rapidjson::Document& doc)
 {
-	std::vector<std::shared_ptr<Texture>> result;
+	std::unordered_map<std::string, std::shared_ptr<Texture>> result;
 	const Value& objectsVal = doc.FindMember(crtSceneTextures)->value;
 	if (!objectsVal.IsNull() && objectsVal.IsArray()) {
 		size_t objectsCount = objectsVal.GetArray().Size();
 		for (int i = 0; i < objectsCount; i++) {
 			assert(!objectsVal.GetArray()[i].IsNull() && objectsVal.GetArray()[i].IsObject());
-			result.push_back(loadTexture(objectsVal.GetArray()[i].GetObject()));
+			loadTexture(objectsVal.GetArray()[i].GetObject(), result);
 		}
 	}
 	return result;

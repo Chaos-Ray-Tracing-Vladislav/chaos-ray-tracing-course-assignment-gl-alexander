@@ -1,21 +1,19 @@
 #pragma once
-#include <vector>
+#include <unordered_map>
 #include <memory>
-#include "ConstantTexture.h"
-#include "EdgeTexture.h"
-#include "CheckerTexture.h"
-#include "BitmapTexture.h"
+#include "Texture.h"
 #include "../rapidjson/document.h"
 
 class CRTTextureFactory
 {
-	static std::shared_ptr<Texture> loadTexture(const rapidjson::Value::ConstObject& textureObj);
+	static void loadTexture(const rapidjson::Value::ConstObject& textureObj, 
+		std::unordered_map<std::string, std::shared_ptr<Texture>>& textures);
 	static std::shared_ptr<Texture> loadAlbedo(const rapidjson::Value::ConstObject& textureObj);
 	static std::shared_ptr<Texture> loadEdges(const rapidjson::Value::ConstObject& textureObj);
 	static std::shared_ptr<Texture> loadChecker(const rapidjson::Value::ConstObject& textureObj);
 	static std::shared_ptr<Texture> loadBitmap(const rapidjson::Value::ConstObject& textureObj);
 public:
-	static std::vector<std::shared_ptr<Texture>> parseTextures(const rapidjson::Document& doc);
+	static std::unordered_map<std::string, std::shared_ptr<Texture>> parseTextures(const rapidjson::Document& doc);
 };
 
 static const char* crtSceneTextures = "textures";

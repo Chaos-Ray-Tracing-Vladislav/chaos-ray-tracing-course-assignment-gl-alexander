@@ -1,4 +1,5 @@
 #include "CRTMesh.h"
+#include <assert.h>
 
 void CRTMesh::calculateFaceNormals() {
     for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
@@ -50,9 +51,9 @@ CRTVector CRTMesh::calculateSmoothNormal(int triangleIndex, const CRTVector& bar
     CRTVector v2_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex + 2]];
 
     // calculate the normal based on the barycentic coordinates {u, v, w} using the formula
-    return v0_VertexNormal * barycentic.z
+    return (v0_VertexNormal * barycentic.z
         + v1_VertexNormal * barycentic.x
-        + v2_VertexNormal * barycentic.y;
+        + v2_VertexNormal * barycentic.y).normalize();
 }
 
 Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
@@ -95,6 +96,19 @@ CRTVector CRTMesh::getUV(const Intersection& data) const
     return uvs[v1_index] * data.barycentricCoordinates.x
         + uvs[v2_index] * data.barycentricCoordinates.y
         + uvs[v0_index] * data.barycentricCoordinates.z;
+}
+
+CRTVector CRTMesh::sampleMaterial(const CRTMaterial& material, const Intersection& data) const
+{
+    if (material.constantAlbedo) {
+        return material.albedo;
+    }
+    else {
+        assert(material.texture != nullptr);
+        CRTVector uv = getUV(data);
+        // std::variant allows the type safe std::visit
+        return std::visit([&uv, &data](const auto& t) { return t.sample(uv.x, uv.y, data.barycentricCoordinates); }, *material.texture);
+    }
 }
 
 

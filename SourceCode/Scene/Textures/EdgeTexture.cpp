@@ -1,7 +1,8 @@
 #include "EdgeTexture.h"
+#include <iostream>
 
-EdgeTexture::EdgeTexture(const std::string& name, const CRTVector& edgeColor, const CRTVector& innerColor, float edgeWidth)
-	: Texture(name), edgeColor(edgeColor), innerColor(innerColor), edgeWidth(edgeWidth)
+EdgeTexture::EdgeTexture(const CRTVector& edgeColor, const CRTVector& innerColor, float edgeWidth)
+	: edgeColor(edgeColor), innerColor(innerColor), edgeWidth(edgeWidth)
 {}
 
 CRTVector EdgeTexture::sample(float u, float v, const CRTVector& bary) const
