@@ -10,7 +10,7 @@
 static const int INVALID_IND = -1;
 
 static const int MAX_DEPTH = 25;
-static const int MAX_TRIANGLES = 1;
+static const int MAX_TRIANGLES = 16;
 
 struct KDTreeNode {
 	struct TriangleIndexPair {
