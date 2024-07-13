@@ -63,7 +63,6 @@ bool CRTVector::operator==(const CRTVector& other) const {
 		&& abs(this->z - other.z) <= EPSILON;
 }
 
-
 CRTVector operator+(const CRTVector& lhs, const CRTVector& rhs) {
 	CRTVector result = lhs;
 	result += rhs;

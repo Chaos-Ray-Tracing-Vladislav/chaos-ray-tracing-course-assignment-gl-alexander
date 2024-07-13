@@ -52,3 +52,29 @@ bool CRTBox::intersects(const CRTRay& ray) const
     return true;
 
 }
+
+void CRTBox::split(CRTBox& first, CRTBox& second, AxisLabel label) const
+{
+    first = second = *this;
+    // split the parent box
+    switch (label) {
+    case AxisLabel::X: // split by X axis
+    {
+        float midX = min.x + (max.x - min.x) / 2.0;
+        first.max.x = second.min.x = midX;
+        break;
+    }
+    case AxisLabel::Y: // split by Y axis
+    {
+        float midY = min.y + (max.y - min.y) / 2.0;
+        first.max.y = second.min.y = midY;
+        break;
+    }
+    case AxisLabel::Z: // split by Z axis
+    {
+        float midZ = min.z + (max.z - min.z) / 2.0;
+        first.max.z = second.min.z = midZ;
+        break;
+    }
+    }
+}

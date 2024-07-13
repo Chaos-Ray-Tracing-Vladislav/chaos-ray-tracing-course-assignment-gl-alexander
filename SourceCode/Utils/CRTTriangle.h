@@ -1,5 +1,6 @@
 #pragma once
 #include "CRTVector.h"
+#include "CRTBox.h"
 #include "CRTRay.h"
 #include <cmath>
 #include <vector>
@@ -30,6 +31,7 @@ public:
 	bool pointInTriangle(const CRTVector& point) const;
 
 	Intersection intersectsRay(const CRTRay& ray) const;
+	bool isInBox(const CRTBox& box) const;
 
 	CRTVector getBarycenticCoordinates(const CRTVector& point) const;
 };

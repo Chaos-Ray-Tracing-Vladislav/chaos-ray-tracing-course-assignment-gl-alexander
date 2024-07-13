@@ -18,6 +18,7 @@ class CRTRenderer
 	const CRTScene* scene;
 
 	Intersection rayTrace(const CRTRay& ray) const;
+	Intersection rayTraceAccelerated(const CRTRay& ray, float maxDistance = FLT_MAX) const;
 
 	CRTVector shade(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeDiffuse(const CRTRay& ray, const Intersection& data) const;
@@ -27,6 +28,7 @@ class CRTRenderer
 
 	void renderRegionNoAABB(int x, int y, int width, int height, CRTImage& output) const;
 	void renderRegion(int x, int y, int width, int height, CRTImage& output) const;
+	void renderRegionAccelerated(int x, int y, int width, int height, CRTImage& output) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 
@@ -40,5 +42,7 @@ public:
 	CRTImage renderByRegions() const;
 	CRTImage renderByBuckets() const;
 	CRTImage renderWithAABB() const;
+	CRTImage renderAccelerated() const;
+	CRTImage renderAcceleratedSinglethreaded() const;
 
 };

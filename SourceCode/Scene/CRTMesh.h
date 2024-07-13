@@ -19,7 +19,6 @@ class CRTMesh
 	void calculateFaceNormals();
 	void calculateVertexNormals();
 
-	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const;
 public:
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex);
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex);
@@ -28,7 +27,12 @@ public:
 
 	CRTVector getUV(const Intersection& data) const;
 	CRTVector sampleMaterial(const CRTMaterial& material, const Intersection& data) const;
+	CRTVector calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const;
 
 	int getMaterialIndex() const;
+
+	CRTTriangle getTriangleByIndex(int index) const;
+	std::vector<CRTTriangle> getAllTriangles() const;
+	unsigned trianglesCount() const;
 };
 
