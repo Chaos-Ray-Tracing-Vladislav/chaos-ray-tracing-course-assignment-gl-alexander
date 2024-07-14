@@ -81,9 +81,8 @@ Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
     for (int i = 0; i < scene->getObjectsCount(); i++) {
         curr_intersection = scene->getGeometryObject(i).intersectsRay(ray);
         if (curr_intersection.triangleIndex != NO_HIT_INDEX) {
-            double distanceToOrigin = (curr_intersection.hitPoint - ray.origin).length();
-            if (distanceToOrigin < minDistanceToOrigin) {
-                minDistanceToOrigin = distanceToOrigin;
+            if (curr_intersection.t < minDistanceToOrigin) {
+                minDistanceToOrigin = curr_intersection.t;
                 intersection = std::move(curr_intersection);
                 intersection.hitObjectIndex = i; // here we set the mesh it hits
                 intersection.materialIndex = scene->getGeometryObject(i).getMaterialIndex();

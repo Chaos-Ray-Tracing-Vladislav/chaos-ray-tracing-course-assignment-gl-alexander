@@ -86,17 +86,15 @@ void KDTree::getMeshAndRelativeIndex(int triangleIndex, int& meshIndex, int& rel
 
 Intersection KDTree::intersectLeaf(const CRTRay& ray, const NodeTriangles& triangles, float maxDistance) const
 {
-	Intersection intersection;
+	Intersection intersection, triangle_intersection;
 	int meshIndex = 0, relativeIndex = 0;
 	float closestHitDitance = FLOAT_MAX;
-	Intersection triangle_intersection;
 	for (auto& tri : triangles) {
 		triangle_intersection = std::move(tri.triangle.intersectsRay(ray));
 		if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
-			float distance = (triangle_intersection.hitPoint - ray.origin).length();
-			if (distance < closestHitDitance && distance <= maxDistance) {
+			if (triangle_intersection.t < closestHitDitance && triangle_intersection.t <= maxDistance) {
 				getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
-				closestHitDitance = distance;
+				closestHitDitance = triangle_intersection.t;
 				intersection = std::move(triangle_intersection); // this copies all the data we've already calculated
 				intersection.triangleIndex = relativeIndex;
 				intersection.hitObjectIndex = meshIndex;
@@ -107,15 +105,14 @@ Intersection KDTree::intersectLeaf(const CRTRay& ray, const NodeTriangles& trian
 		intersection.smoothNormal = objects[meshIndex].calculateSmoothNormal(
 			intersection.triangleIndex, intersection.barycentricCoordinates, intersection.hitPoint);
 		intersection.materialIndex = objects[meshIndex].getMaterialIndex();
-		return intersection;
 	}
-	
+	return intersection;
 }
 
 Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 {
 	std::vector<Intersection> allIntersections;
-	Intersection currIntersection;
+	Intersection currIntersection = {};
 	std::stack<int> nodeStack;
 	int currInd = 0;
 	nodeStack.push(currInd);
@@ -124,7 +121,7 @@ Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 		nodeStack.pop();
 		if (nodes[currInd].box.intersects(ray)) {
 			if (nodes[currInd].triangles.size() > 0) { // leaf node
-				currIntersection = std::move(intersectLeaf(ray, nodes[currInd].triangles, maxDistance));
+				currIntersection = intersectLeaf(ray, nodes[currInd].triangles, maxDistance);
 				if (currIntersection.triangleIndex != NO_HIT_INDEX) {
 					allIntersections.push_back(currIntersection);
 				}
@@ -139,11 +136,9 @@ Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 	}
 	Intersection result;
 	float minDistance = FLOAT_MAX;
-	float currDistance;
 	for (auto& intersection : allIntersections) {
-		currDistance = (intersection.hitPoint - ray.origin).length();
-		if (currDistance < minDistance && currDistance <= maxDistance) {
-			minDistance = currDistance;
+		if (intersection.t < minDistance && intersection.t <= maxDistance) {
+			minDistance = intersection.t;
 			result = std::move(intersection);
 		}
 	}
@@ -158,19 +153,17 @@ TypeIntersectionMap KDTree::intersectPerTypeLeaf(const CRTRay& ray,
 	TypeIntersectionMap result;
 	std::unordered_map<CRTMaterialType, float> closestDistance;
 	int meshIndex = 0, relativeIndex = 0;
-	float currDistance;
 	Intersection triangle_intersection;
 	for (auto& tri : triangles) {
 		triangle_intersection = std::move(tri.triangle.intersectsRay(ray));
 		if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
-			currDistance = (triangle_intersection.hitPoint - ray.origin).length();
-			if (currDistance > maxDist) continue;
+			if (triangle_intersection.t > maxDist) continue;
 
 			const CRTMaterial& mat = materials[objects[meshIndex].getMaterialIndex()];
 			if (result.count(mat.type)) { // there's already a material with that type that's been intersected
-				if (currDistance < closestDistance[mat.type]) {
+				if (triangle_intersection.t < closestDistance[mat.type]) {
 					getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
-					closestDistance[mat.type] = currDistance;
+					closestDistance[mat.type] = triangle_intersection.t;
 					result[mat.type] = std::move(triangle_intersection);
 					result[mat.type].triangleIndex = relativeIndex;
 					result[mat.type].hitObjectIndex = meshIndex;
@@ -179,7 +172,7 @@ TypeIntersectionMap KDTree::intersectPerTypeLeaf(const CRTRay& ray,
 			else {
 
 				getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
-				closestDistance[mat.type] = currDistance;
+				closestDistance[mat.type] = triangle_intersection.t;
 				result[mat.type] = std::move(triangle_intersection);
 				result[mat.type].triangleIndex = relativeIndex;
 				result[mat.type].hitObjectIndex = meshIndex;
@@ -197,7 +190,7 @@ void KDTree::handleLeafIntersections(TypeIntersectionMap& resultIntersections, T
 	// so we can save copy operations when taking intersection values with std::move
 	for (auto& it : leafIntersections) {
 		if (resultIntersections.count(it.first)) { // so there's already an intersection with the given material type
-			if ((it.second.hitPoint - ray.origin).length() < (resultIntersections[it.first].hitPoint - ray.origin).length()) {
+			if (it.second.t < resultIntersections[it.first].t) {
 				// then we've found a closer  hit for that material type
 				resultIntersections[it.first] = std::move(it.second);
 			}

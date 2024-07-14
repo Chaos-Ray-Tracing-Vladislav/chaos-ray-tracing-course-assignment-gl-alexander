@@ -107,6 +107,7 @@ Intersection CRTTriangle::intersectsRay(const CRTRay& ray) const {
 		intersection.triangleIndex = 0;
 		intersection.faceNormal = normal;
 		intersection.barycentricCoordinates = getBarycenticCoordinates(hitPoint);
+		intersection.t = t;
 		return intersection;
 	}
 

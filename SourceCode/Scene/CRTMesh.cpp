@@ -67,9 +67,8 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
         CRTTriangle triangle = getTriangleByIndex(i / VERTICES);
         triangle_intersection = std::move(triangle.intersectsRay(ray));
         if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
-            float distance = (triangle_intersection.hitPoint - ray.origin).length();
-            if (distance < closestHitDitance) {
-                closestHitDitance = distance;
+            if (triangle_intersection.t < closestHitDitance) {
+                closestHitDitance = triangle_intersection.t;
                 intersection = std::move(triangle_intersection); // this copies all the data we've already calculated
                 intersection.triangleIndex = i;
             }
