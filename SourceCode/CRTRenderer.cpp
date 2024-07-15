@@ -63,6 +63,16 @@ void CRTRenderer::renderRegion(int x, int y, int width, int height, CRTImage& ou
     }
 }
 
+void CRTRenderer::renderRegionAccelerated(int x, int y, int width, int height, CRTImage& output) const
+{
+    for (int rowId = y; rowId < y + height; rowId++) {
+        for (int colId = x; colId < x + width; colId++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId);
+            output[rowId][colId] = shade(ray, rayTraceAccelerated(ray));
+        }
+    }
+}
+
 Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
 {
     Intersection intersection;
@@ -71,9 +81,8 @@ Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
     for (int i = 0; i < scene->getObjectsCount(); i++) {
         curr_intersection = scene->getGeometryObject(i).intersectsRay(ray);
         if (curr_intersection.triangleIndex != NO_HIT_INDEX) {
-            double distanceToOrigin = (curr_intersection.hitPoint - ray.origin).length();
-            if (distanceToOrigin < minDistanceToOrigin) {
-                minDistanceToOrigin = distanceToOrigin;
+            if (curr_intersection.t < minDistanceToOrigin) {
+                minDistanceToOrigin = curr_intersection.t;
                 intersection = std::move(curr_intersection);
                 intersection.hitObjectIndex = i; // here we set the mesh it hits
                 intersection.materialIndex = scene->getGeometryObject(i).getMaterialIndex();
@@ -81,6 +90,11 @@ Intersection CRTRenderer::rayTrace(const CRTRay& ray) const
         }
     }
     return intersection;
+}
+
+Intersection CRTRenderer::rayTraceAccelerated(const CRTRay& ray, float maxDistance) const
+{
+    return scene->getAccelerationStructure().intersect(ray, maxDistance);
 }
 
 CRTVector CRTRenderer::shade(const CRTRay& ray, const Intersection& data) const
@@ -180,26 +194,18 @@ CRTVector CRTRenderer::shadeRefractive(const CRTRay& ray, const Intersection& da
     float R0 = pow((n1 - n2) / (n1 + n2), 2);
     float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
 
-    // Simple Fresnel calculation
-    // float fresnel = 0.5 * pow(1.0f - cosIncomming, 5);
-
     return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }
 
 
 bool CRTRenderer::intersectsObject(const CRTRay& ray, float distanceToLight) const
 {
-    Intersection intersection;
-    for (int i = 0; i < scene->getObjectsCount(); i++) {
-        intersection = scene->getGeometryObject(i).intersectsRay(ray);
-        if (intersection.triangleIndex != NO_HIT_INDEX) {
-            if ((ray.origin - intersection.hitPoint).length() < distanceToLight 
-                && scene->getMaterial(intersection.materialIndex).type != CRTMaterialType::REFRACTIVE) {
-                return true;
-            }
-        }
+    return rayTraceAccelerated(ray, distanceToLight).hitObjectIndex != NO_HIT_INDEX;
+    /*TypeIntersectionMap intersectionsPerType = scene->getAccelerationStructure().intersectPerType(ray, distanceToLight);
+    if (intersectionsPerType.count(CRTMaterialType::DIFFUSE) > 0 || intersectionsPerType.count(CRTMaterialType::REFLECTIVE)) {
+        return true;
     }
-    return false;
+    return false;*/
 }
 
 CRTImage CRTRenderer::renderSceneBarycentic() const
@@ -323,5 +329,46 @@ CRTImage CRTRenderer::renderWithAABB() const
     for (auto& thread : threads) {
         thread.join();
     }
+    return image;
+}
+
+CRTImage CRTRenderer::renderAccelerated() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+
+    CRTBucketQueue queue(scene); // the constructor generates the regions
+
+    int threadCount = std::thread::hardware_concurrency();
+    std::vector<std::thread> threads;
+
+    for (int i = 0; i < threadCount; i++) {
+        threads.push_back(std::thread([this, &queue, &image]() {
+            CRTRegion region;
+            while (true) {
+                if (!queue.getRegion(region)) { // if getRegion returns false, then there's no more buckets
+                    break;
+                }
+                renderRegionAccelerated(region.startX, region.startY, region.width, region.height, image);
+            }
+            }
+        ));
+    }
+
+    for (auto& thread : threads) {
+        thread.join();
+    }
+    return image;
+}
+
+CRTImage CRTRenderer::renderAcceleratedSinglethreaded() const
+{
+    const unsigned imageHeight = scene->getSettings().imageSettings.height;
+    const unsigned imageWidth = scene->getSettings().imageSettings.width;
+
+    CRTImage image(imageHeight, std::vector<CRTVector>(imageWidth, scene->getSettings().bgColor));
+    renderRegionAccelerated(0, 0, imageWidth, imageHeight, image);
     return image;
 }

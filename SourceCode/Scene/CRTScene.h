@@ -8,6 +8,7 @@
 #include "CRTLight.h"
 #include "Textures/Texture.h"
 #include "../Utils/CRTBox.h"
+#include "../Utils/KDTree.h"
 
 class CRTScene
 {
@@ -15,6 +16,7 @@ class CRTScene
 	std::vector<CRTMesh> geometryObjects;
 	std::vector<CRTMaterial> materials;
 	std::unordered_map<std::string, std::shared_ptr<Texture>> textures;
+	KDTree accelerationTree;
 
 	CRTCamera camera;
 	CRTSettings settings;
@@ -30,6 +32,8 @@ public:
 	
 	const CRTMesh& getGeometryObject(int index) const;
 	const CRTMaterial& getMaterial(int index) const;
+	const KDTree& getAccelerationStructure() const;
+
 	int getObjectsCount() const;
 
 	const CRTCamera& getCamera() const;

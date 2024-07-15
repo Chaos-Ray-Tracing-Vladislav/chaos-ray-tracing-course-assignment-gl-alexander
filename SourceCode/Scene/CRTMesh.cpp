@@ -1,5 +1,6 @@
 #include "CRTMesh.h"
 #include <assert.h>
+#include <limits>
 
 void CRTMesh::calculateFaceNormals() {
     for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
@@ -60,18 +61,14 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
 {
     Intersection intersection;
 
-    float closestHitDitance = FLT_MAX;
+    float closestHitDitance = std::numeric_limits<float>::max();
     Intersection triangle_intersection;
     for (int i = 0; i < triangleVertIndices.size(); i += VERTICES) {
-        CRTTriangle triangle(vertices[triangleVertIndices[i + 0]],
-            vertices[triangleVertIndices[i + 1]],
-            vertices[triangleVertIndices[i + 2]], 
-            faceNormals[i / VERTICES]);
+        CRTTriangle triangle = getTriangleByIndex(i / VERTICES);
         triangle_intersection = std::move(triangle.intersectsRay(ray));
         if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
-            float distance = (triangle_intersection.hitPoint - ray.origin).length();
-            if (distance < closestHitDitance) {
-                closestHitDitance = distance;
+            if (triangle_intersection.t < closestHitDitance) {
+                closestHitDitance = triangle_intersection.t;
                 intersection = std::move(triangle_intersection); // this copies all the data we've already calculated
                 intersection.triangleIndex = i;
             }
@@ -114,4 +111,33 @@ CRTVector CRTMesh::sampleMaterial(const CRTMaterial& material, const Intersectio
 
 int CRTMesh::getMaterialIndex() const {
     return materialIndex;
+}
+
+CRTTriangle CRTMesh::getTriangleByIndex(int index) const
+{
+    int ind = index * VERTICES;
+    if (ind >= triangleVertIndices.size() || ind < 0) {
+        assert(false);
+    }
+    return CRTTriangle (vertices[triangleVertIndices[ind + 0]],
+        vertices[triangleVertIndices[ind + 1]],
+        vertices[triangleVertIndices[ind + 2]],
+        faceNormals[index]);
+
+}
+
+std::vector<CRTTriangle> CRTMesh::getAllTriangles() const
+{
+    int count = trianglesCount();
+    std::vector<CRTTriangle> triangles;
+    triangles.reserve(count);
+    for (int i = 0; i < count; i++) {
+        triangles.push_back(getTriangleByIndex(i));
+    }
+    return triangles;
+}
+
+unsigned CRTMesh::trianglesCount() const
+{
+    return faceNormals.size();
 }

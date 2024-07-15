@@ -4,7 +4,8 @@
 CRTScene::CRTScene(const CRTCamera& camera, const CRTSettings& settings,
 	const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials,
 	const std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, const std::vector<CRTLight>& lights, const CRTBox& AABB)
-	: camera(camera), settings(settings), geometryObjects(geometryObjects), materials(materials), lights(lights), textures(textures), AABB(AABB)
+	: camera(camera), settings(settings), geometryObjects(geometryObjects), materials(materials), lights(lights), textures(textures), AABB(AABB),
+	accelerationTree(this->geometryObjects, this->materials, this->AABB)
 {}
 
 int CRTScene::getObjectsCount() const
@@ -19,6 +20,11 @@ const CRTMesh& CRTScene::getGeometryObject(int index) const
 
 const CRTMaterial& CRTScene::getMaterial(int index) const {
 	return materials[index];
+}
+
+const KDTree& CRTScene::getAccelerationStructure() const
+{
+	return accelerationTree;
 }
 
 std::shared_ptr<Texture> CRTScene::getTexture(const std::string& textureName) const

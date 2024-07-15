@@ -1,5 +1,12 @@
 #pragma once
 constexpr float EPSILON = 0.00001;
+constexpr int AXIS_COUNT = 3;
+
+enum class AxisLabel {
+	X = 0,
+	Y = 1,
+	Z = 2
+};
 
 struct CRTVector {
 	static const unsigned MEMBERS_COUNT = 3;

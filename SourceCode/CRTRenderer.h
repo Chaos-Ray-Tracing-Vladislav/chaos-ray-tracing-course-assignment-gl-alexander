@@ -7,7 +7,7 @@
 
 using CRTImage = std::vector<std::vector<CRTVector>>;
 
-constexpr int MAX_RAY_DEPTH = 15;
+constexpr int MAX_RAY_DEPTH = 5;
 constexpr float PI = 3.1415f;
 constexpr float SHADOW_BIAS = 0.001f;
 constexpr float REFLECTION_BIAS = 0.001f;
@@ -18,6 +18,7 @@ class CRTRenderer
 	const CRTScene* scene;
 
 	Intersection rayTrace(const CRTRay& ray) const;
+	Intersection rayTraceAccelerated(const CRTRay& ray, float maxDistance = FLT_MAX) const;
 
 	CRTVector shade(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeDiffuse(const CRTRay& ray, const Intersection& data) const;
@@ -27,6 +28,7 @@ class CRTRenderer
 
 	void renderRegionNoAABB(int x, int y, int width, int height, CRTImage& output) const;
 	void renderRegion(int x, int y, int width, int height, CRTImage& output) const;
+	void renderRegionAccelerated(int x, int y, int width, int height, CRTImage& output) const;
 public:
 	CRTRenderer(const CRTScene* scene);
 
@@ -40,5 +42,7 @@ public:
 	CRTImage renderByRegions() const;
 	CRTImage renderByBuckets() const;
 	CRTImage renderWithAABB() const;
+	CRTImage renderAccelerated() const;
+	CRTImage renderAcceleratedSinglethreaded() const;
 
 };

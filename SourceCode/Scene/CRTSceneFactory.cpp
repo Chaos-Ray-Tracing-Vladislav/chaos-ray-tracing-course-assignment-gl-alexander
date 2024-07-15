@@ -264,6 +264,8 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	parseSettings(doc, settings, camera);
 
 	CRTBox AABB;
+	AABB.max = { FLOAT_MIN, FLOAT_MIN, FLOAT_MIN };
+	AABB.min = { FLOAT_MAX, FLOAT_MAX, FLOAT_MAX };
 	std::vector<CRTLight> lights = parseLights(doc);
 	std::unordered_map<std::string, std::shared_ptr<Texture>> textures = CRTTextureFactory::parseTextures(doc);
 	std::vector<CRTMaterial> materials = parseMaterials(doc, textures);

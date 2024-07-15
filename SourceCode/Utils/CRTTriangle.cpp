@@ -1,4 +1,5 @@
 #include "CRTTriangle.h"
+#include <limits>
 
 CRTTriangle::CRTTriangle(const CRTVector vertices[VERTICES]) : CRTTriangle(vertices[0], vertices[1], vertices[2]) 
 {
@@ -106,10 +107,33 @@ Intersection CRTTriangle::intersectsRay(const CRTRay& ray) const {
 		intersection.triangleIndex = 0;
 		intersection.faceNormal = normal;
 		intersection.barycentricCoordinates = getBarycenticCoordinates(hitPoint);
+		intersection.t = t;
 		return intersection;
 	}
 
 	return intersection;
+}
+
+bool CRTTriangle::isInBox(const CRTBox& box) const
+{
+	CRTVector tr_min{ std::numeric_limits<float>::max(), std::numeric_limits<float>::max(), std::numeric_limits<float>::max() };
+	CRTVector tr_max = -tr_min;
+	for (auto& vertex : vertices) {
+		tr_min.x = std::min(tr_min.x, vertex.x);
+		tr_min.y = std::min(tr_min.y, vertex.y);
+		tr_min.z = std::min(tr_min.z, vertex.z);
+
+		tr_max.x = std::max(tr_max.x, vertex.x);
+		tr_max.y = std::max(tr_max.y, vertex.y);
+		tr_max.z = std::max(tr_max.z, vertex.z);
+	}
+	if (tr_min.x > box.max.x || tr_max.x < box.min.x)
+		return false;
+	if (tr_min.y > box.max.y || tr_max.y < box.min.y)
+		return false;
+	if (tr_min.z > box.max.z || tr_max.z < box.min.z)
+		return false;
+	return true;
 }
 
 CRTVector CRTTriangle::getBarycenticCoordinates(const CRTVector& point) const

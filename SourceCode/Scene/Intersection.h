@@ -12,4 +12,5 @@ struct Intersection {
 	int materialIndex;
 	int hitObjectIndex = NO_HIT_INDEX;
 	int triangleIndex = NO_HIT_INDEX;
+	float t;
 };
