@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <memory>
 #include "Texture.h"
-#include "../rapidjson/document.h"
+#include "../../Dependencies/rapidjson/document.h"
 
 class CRTTextureFactory
 {

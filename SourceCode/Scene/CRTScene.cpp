@@ -3,7 +3,8 @@
 
 CRTScene::CRTScene(const CRTCamera& camera, const CRTSettings& settings,
 	const std::vector<CRTMesh>& geometryObjects, const std::vector<CRTMaterial>& materials,
-	const std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, const std::vector<CRTLight>& lights, const CRTBox& AABB)
+	const std::unordered_map<std::string, std::shared_ptr<Texture>>& textures, 
+	const std::vector<CRTLight>& lights, const CRTBox& AABB)
 	: camera(camera), settings(settings), geometryObjects(geometryObjects), materials(materials), lights(lights), textures(textures), AABB(AABB),
 	accelerationTree(this->geometryObjects, this->materials, this->AABB)
 {}
@@ -37,6 +38,11 @@ const CRTCamera& CRTScene::getCamera() const
 	return camera;
 }
 
+void CRTScene::setCamera(const CRTCamera& camera)
+{
+	this->camera = camera;
+}
+
 const CRTSettings& CRTScene::getSettings() const
 {
 	return settings;
@@ -44,6 +50,11 @@ const CRTSettings& CRTScene::getSettings() const
 
 const std::vector<CRTLight>& CRTScene::getLights() const {
 	return lights;
+}
+
+const CRTLight& CRTScene::getRandomLight() const
+{
+	return lights[randomInt(0, lights.size())];
 }
 
 const CRTBox& CRTScene::getAABB() const

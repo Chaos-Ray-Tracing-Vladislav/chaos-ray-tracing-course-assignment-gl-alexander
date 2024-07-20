@@ -28,6 +28,14 @@ CRTVector& CRTVector::normalize() {
 	return *this;
 }
 
+CRTVector& CRTVector::clamp(float a, float b)
+{
+	x = clampValue(x, a, b);
+	y = clampValue(y, a, b);
+	z = clampValue(z, a, b);
+	return *this;
+}
+
 CRTVector& CRTVector::operator+=(const CRTVector& rhs) {
 	this->x += rhs.x;
 	this->y += rhs.y;
@@ -47,6 +55,11 @@ CRTVector& CRTVector::operator*=(float k) {
 	y *= k;
 	z *= k;
 	return *this;
+}
+
+CRTVector& CRTVector::operator/=(float k)
+{
+	return (*this) *= (1.0f / k);
 }
 
 // by-component multiplication
@@ -90,6 +103,18 @@ CRTVector operator*(const float k, const CRTVector& rhs) {
 	return rhs * k;
 }
 
+CRTVector operator/(const CRTVector& lhs, float k)
+{
+	CRTVector result = lhs;
+	result /= k;
+	return result;
+}
+
+CRTVector operator/(float k, const CRTVector& rhs)
+{
+	return rhs / k;
+}
+
 // by-component multiplication
 CRTVector operator*(const CRTVector& lhs, const CRTVector& rhs) {
 	CRTVector result = lhs;
@@ -115,15 +140,37 @@ CRTVector cross(const CRTVector& A, const CRTVector& B) {
 						A.x * B.y - A.y * B.x	);
 }
 
-
 float dot(const CRTVector& A, const CRTVector& B) {
 	return (A.x * B.x) + (A.y * B.y) + (A.z * B.z);
 }
+
 
 CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal)
 {
 	CRTVector Y = dot(incomming, surfaceNormal) * surfaceNormal;
 	return (incomming - 2 * Y).normalize();
+}
+
+CRTVector randomHemisphereSample(const CRTVector& normal)
+{
+	double u = randFloat();
+	double v = randFloat();
+
+	double theta = 2 * PI * u;
+	double cosPhi = 2 * v - 1;
+	double sinPhi = sqrt(1 - cosPhi * cosPhi);
+
+	CRTVector vec(
+		cos(theta) * sinPhi,
+		cosPhi,
+		sin(theta) * sinPhi
+	);
+
+	/// restrict to the hemisphere: it is on the wrong side, just flip the result:
+	if (dot(vec, normal) < 0)
+		vec = -vec;
+
+	return vec;
 }
 
 

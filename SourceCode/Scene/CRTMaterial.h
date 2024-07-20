@@ -1,5 +1,7 @@
 #pragma once
 #include "../Utils/CRTVector.h"
+#include "../Utils/CRTRay.h"
+#include "Intersection.h"
 #include "Textures/Texture.h"
 #include <memory>
 #include <string>

@@ -10,6 +10,8 @@ class CRTMatrix
 public:
 	CRTMatrix();
 	CRTMatrix(const float m[MATRIX_ROWS][MATRIX_COLUMNS]);
+	CRTMatrix(CRTVector e[MATRIX_ROWS]);
+	CRTMatrix(const CRTVector& e1, const CRTVector& e2, const CRTVector& e3);
 
 	CRTMatrix& operator*=(const CRTMatrix& other);
 	CRTMatrix& operator+=(const CRTMatrix& other);

@@ -9,22 +9,21 @@
 
 static const int INVALID_IND = -1;
 
-static const int MAX_DEPTH = 25;
+static const int MAX_DEPTH = 40;
 static const int MAX_TRIANGLES = 16;
 
 struct KDTreeNode {
 	struct TriangleIndexPair {
 		CRTTriangle triangle;
-		int index;
+		int index = INVALID_IND;
 	};
 	CRTBox box;
-	int parentInd;
-	int leftInd;
-	int rightInd;
+	int parentInd = INVALID_IND;
+	int leftInd = INVALID_IND;
+	int rightInd = INVALID_IND;
 	std::vector<TriangleIndexPair> triangles;
 };
 
-using TypeIntersectionMap = std::unordered_map<CRTMaterialType, Intersection>;
 using NodeTriangles = std::vector<KDTreeNode::TriangleIndexPair>;
 
 class KDTree {
@@ -38,8 +37,6 @@ class KDTree {
 	void getMeshAndRelativeIndex(int triangleIndex, int& meshIndex, int& relativeIndex) const;
 
 	Intersection intersectLeaf(const CRTRay& ray, const NodeTriangles& triangles, float maxDist = FLOAT_MAX) const;
-	TypeIntersectionMap intersectPerTypeLeaf(const CRTRay& ray, const NodeTriangles& triangles, float maxDist = FLOAT_MAX) const;
-	void handleLeafIntersections(TypeIntersectionMap& resultIntersections, TypeIntersectionMap&& leafIntersections, const CRTRay& ray) const;
 
 	void build(int parentInd, const NodeTriangles& remainingTriangles, int depth);
 public:
@@ -47,7 +44,4 @@ public:
 
 	// returns the closest intersection to the ray origin
 	Intersection intersect(const CRTRay& ray, float maxDist = FLOAT_MAX) const;
-
-	// returns a map <Type, Intersection> for the closest hit with each type
-	TypeIntersectionMap intersectPerType(const CRTRay& ray, float maxDist = FLOAT_MAX) const;
 };

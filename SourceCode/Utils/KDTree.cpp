@@ -1,6 +1,15 @@
 #include "KDTree.h"
 #include <iostream>
 
+static unsigned nearestPow2(unsigned n) {
+	n--;
+	n |= n >> 1;
+	n |= n >> 2;
+	n |= n >> 4;
+	n |= n >> 8;
+	n |= n >> 16;
+	return ++n;
+}
 
 KDTree::KDTree(const std::vector<CRTMesh>& objects, const std::vector<CRTMaterial>& materials, const CRTBox& sceneAABB) 
 	: objects(objects), materials(materials)
@@ -16,10 +25,11 @@ KDTree::KDTree(const std::vector<CRTMesh>& objects, const std::vector<CRTMateria
 		currTrianglesCount += meshTriangles.size();
 		objectTriangleCount.push_back(currTrianglesCount);
 	}
-	int leafNodesCount = allTriangles.size() / MAX_TRIANGLES; // if all leaf buckets are filled with MAX_TRIANGES 
-	// this implementation of a KD tree is binary, but the maximum number of nodes for a full k-tree with n leaf nodes is k^n
+	// The worst case scenario is that each leaf node contains 1 triangle, so we'd have allTriangles.size() leaf nodes, regardless of MAX_TRIANGLES
+	// this implementation of a KD tree is binary and the maximum number of nodes for a full k-tree with L leaf nodes is 
+	// L + nearestPowK(L) - 1
 	// if there are less triangles than MAX_TRIANGLES, then leafNodes is 0 and all triangles will be in the root box
-	int maxNodesCount = (2 << leafNodesCount);
+	unsigned maxNodesCount = allTriangles.size() + nearestPow2(allTriangles.size()) - 1;
 	nodes.reserve(maxNodesCount);
 	nodes.emplace_back(sceneAABB, INVALID_IND, INVALID_IND, INVALID_IND, NodeTriangles());
 	build(0, allTriangles, 0);
@@ -94,6 +104,10 @@ Intersection KDTree::intersectLeaf(const CRTRay& ray, const NodeTriangles& trian
 		if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
 			if (triangle_intersection.t < closestHitDitance && triangle_intersection.t <= maxDistance) {
 				getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
+				/*if (ray.type == RayType::SHADOW
+					&& materials[objects[meshIndex].getMaterialIndex()].type == CRTMaterialType::REFRACTIVE) {
+					continue;
+				}*/
 				closestHitDitance = triangle_intersection.t;
 				intersection = std::move(triangle_intersection); // this copies all the data we've already calculated
 				intersection.triangleIndex = relativeIndex;
@@ -111,7 +125,8 @@ Intersection KDTree::intersectLeaf(const CRTRay& ray, const NodeTriangles& trian
 
 Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 {
-	std::vector<Intersection> allIntersections;
+	Intersection result;
+	result.t = FLOAT_MAX;
 	Intersection currIntersection = {};
 	std::stack<int> nodeStack;
 	int currInd = 0;
@@ -123,7 +138,9 @@ Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 			if (nodes[currInd].triangles.size() > 0) { // leaf node
 				currIntersection = intersectLeaf(ray, nodes[currInd].triangles, maxDistance);
 				if (currIntersection.triangleIndex != NO_HIT_INDEX) {
-					allIntersections.push_back(currIntersection);
+					if (currIntersection.t < result.t) {
+						result = std::move(currIntersection);
+					}
 				}
 			}
 			else { // adds children nodes
@@ -134,96 +151,5 @@ Intersection KDTree::intersect(const CRTRay& ray, float maxDistance) const
 			}
 		}
 	}
-	Intersection result;
-	float minDistance = FLOAT_MAX;
-	for (auto& intersection : allIntersections) {
-		if (intersection.t < minDistance && intersection.t <= maxDistance) {
-			minDistance = intersection.t;
-			result = std::move(intersection);
-		}
-	}
-	return result;
-}
-
-
-TypeIntersectionMap KDTree::intersectPerTypeLeaf(const CRTRay& ray,
-	const NodeTriangles& triangles,
-	float maxDist) const
-{
-	TypeIntersectionMap result;
-	std::unordered_map<CRTMaterialType, float> closestDistance;
-	int meshIndex = 0, relativeIndex = 0;
-	Intersection triangle_intersection;
-	for (auto& tri : triangles) {
-		triangle_intersection = std::move(tri.triangle.intersectsRay(ray));
-		if (triangle_intersection.triangleIndex != NO_HIT_INDEX) {
-			if (triangle_intersection.t > maxDist) continue;
-
-			const CRTMaterial& mat = materials[objects[meshIndex].getMaterialIndex()];
-			if (result.count(mat.type)) { // there's already a material with that type that's been intersected
-				if (triangle_intersection.t < closestDistance[mat.type]) {
-					getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
-					closestDistance[mat.type] = triangle_intersection.t;
-					result[mat.type] = std::move(triangle_intersection);
-					result[mat.type].triangleIndex = relativeIndex;
-					result[mat.type].hitObjectIndex = meshIndex;
-				}
-			}
-			else {
-
-				getMeshAndRelativeIndex(tri.index, meshIndex, relativeIndex);
-				closestDistance[mat.type] = triangle_intersection.t;
-				result[mat.type] = std::move(triangle_intersection);
-				result[mat.type].triangleIndex = relativeIndex;
-				result[mat.type].hitObjectIndex = meshIndex;
-			}
-
-		}
-	}
-	return result;
-}
-
-void KDTree::handleLeafIntersections(TypeIntersectionMap& resultIntersections, TypeIntersectionMap&& leafIntersections,
-	const CRTRay& ray) const
-{
-	// leafIntersections is a rval reference, because it's discarded after taking this information
-	// so we can save copy operations when taking intersection values with std::move
-	for (auto& it : leafIntersections) {
-		if (resultIntersections.count(it.first)) { // so there's already an intersection with the given material type
-			if (it.second.t < resultIntersections[it.first].t) {
-				// then we've found a closer  hit for that material type
-				resultIntersections[it.first] = std::move(it.second);
-			}
-		}
-		else {
-			resultIntersections[it.first] = std::move(it.second);
-		}
-	}
-}
-
-TypeIntersectionMap KDTree::intersectPerType(const CRTRay& ray, float maxDist) const
-{
-	TypeIntersectionMap result;
-	TypeIntersectionMap leafIntersections;
-
-	std::stack<int> nodeStack;
-	int currInd = 0;
-	nodeStack.push(currInd);
-	while (!nodeStack.empty()) {
-		currInd = nodeStack.top();
-		nodeStack.pop();
-		if (nodes[currInd].box.intersects(ray)) {
-			if (nodes[currInd].triangles.size() > 0) {
-				handleLeafIntersections(result, intersectPerTypeLeaf(ray, nodes[currInd].triangles, maxDist), ray);
-			}
-			else { // adds children nodes
-				if (nodes[currInd].leftInd != INVALID_IND)
-					nodeStack.push(nodes[currInd].leftInd);
-				if (nodes[currInd].rightInd != INVALID_IND)
-					nodeStack.push(nodes[currInd].rightInd);
-			}
-		}
-	}
-	//handleLeafIntersections takes into account the closest hit per type
 	return result;
 }
