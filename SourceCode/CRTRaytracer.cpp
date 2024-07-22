@@ -118,7 +118,7 @@ void CRTRaytracer::renderRegionNoAABB(int x, int y, int width, int height, CRTIm
     for (int rowId = y; rowId < y + height; rowId++) {
         for (int colId = x; colId < x + width; colId++) {
             CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId);
-            output[rowId][colId] = shade(ray, rayTrace(ray));
+            output[rowId][colId] = shade(ray, rayTraceAccelerated(ray));
         }
     }
 }
@@ -129,7 +129,7 @@ void CRTRaytracer::renderRegionSimple(int x, int y, int width, int height, CRTIm
         for (int colId = x; colId < x + width; colId++) {
             CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); 
             if (scene->getAABB().intersects(ray)) {
-                output[rowId][colId] = shade(ray, rayTrace(ray));
+                output[rowId][colId] = shade(ray, rayTraceAccelerated(ray));
             }
         }
     }
@@ -527,30 +527,6 @@ CRTVector CRTRaytracer::shadeGlobalIllumination(const CRTRay& ray, const Interse
     return diffuseReflections;
 }
 
-CRTVector CRTRaytracer::shadeGIExplicitLightSampling(const CRTRay& ray, const Intersection& data) const
-{
-    return CRTVector();
-    CRTVector normalVector = data.faceNormal;
-    const CRTMaterial& material = scene->getMaterial(data.materialIndex);
-    if (material.smoothShading) normalVector = data.smoothNormal;
-
-    // by default continue just 1 GI ray 
-    CRTRay diffuseReflectionRay{ data.hitPoint + (normalVector * REFLECTION_BIAS),
-        randomHemisphereSample(normalVector),
-        RayType::REFLECTIVE,
-        ray.depth + 1
-    };
-    //const CRTLight& randomLight = scene->getRandomLight();
-    //// TODO FIX: ::: :
-    //CRTRay lightSampleRay {
-    //    data.hitPoint + (normalVector * REFLECTION_BIAS),
-    //    
-    //    RayType::REFLECTIVE,
-    //    ray.depth + 1
-    //}
-    //diffuseReflections += shade(diffuseReflectionRay, rayTraceAccelerated(diffuseReflectionRay)).clamp(0, 1);
-}
-
 CRTVector CRTRaytracer::shadeReflective(const CRTRay& ray, const Intersection& data) const {
     CRTVector normalVector = data.faceNormal;
     const CRTMaterial& material = scene->getMaterial(data.materialIndex);
@@ -560,7 +536,7 @@ CRTVector CRTRaytracer::shadeReflective(const CRTRay& ray, const Intersection& d
     CRTVector reflectedDirection = reflect(ray.direction, normalVector);
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
-    return shade(reflectedRay, rayTrace(reflectedRay)) 
+    return shade(reflectedRay, rayTraceAccelerated(reflectedRay)) 
         * scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data);
 }
 
@@ -583,7 +559,7 @@ CRTVector CRTRaytracer::shadeRefractive(const CRTRay& ray, const Intersection& d
     if (sinIncomming > ((n2 * n2) / (n1 * n1))) { // total internal reflection
         CRTVector reflectedDirection = reflect(ray.direction, normalVector);
         CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
-        return shade(reflectedRay, rayTrace(reflectedRay));
+        return shade(reflectedRay, rayTraceAccelerated(reflectedRay));
     }
 
     float sinOutcomming = (n1 / n2) * sqrt(std::max(0.0f, 1.0f - cosIncomming * cosIncomming));
@@ -604,5 +580,6 @@ CRTVector CRTRaytracer::shadeRefractive(const CRTRay& ray, const Intersection& d
     float R0 = pow((n1 - n2) / (n1 + n2), 2);
     float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
 
-    return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
+    return fresnel * shade(reflectedRay, rayTraceAccelerated(reflectedRay)) 
+        + (1 - fresnel) * shade(refractedRay, rayTraceAccelerated(refractedRay));
 }
