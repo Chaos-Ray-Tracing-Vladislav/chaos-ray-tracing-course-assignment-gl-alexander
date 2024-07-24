@@ -53,3 +53,4 @@ CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal);
 // generates a random normal vector in a hemisphere with the passed normal
 // param normal: the normal, by which the hemisphere is defined
 CRTVector randomHemisphereSample(const CRTVector& normal);
+CRTVector randomSphereSample();
