@@ -15,11 +15,9 @@ constexpr float REFRACTION_BIAS = 0.001f;
 static const float DESATURIZATION = 0.75;
 
 constexpr int GI_RAYS = 1;
-constexpr float LIGHT_IMPORTANCE = 0.6;
 
 class CRTRaytracer
 {
-protected: 
 	CRTScene* scene;
 
 	Intersection rayTrace(const CRTRay& ray) const;
@@ -27,8 +25,10 @@ protected:
 
 	CRTVector shade(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeDiffuse(const CRTRay& ray, const Intersection& data) const;
-	CRTVector shadeDirectIllumination(const CRTRay& ray, const Intersection& data) const;
+	CRTVector shadeDiffuseSimple(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeGlobalIllumination(const CRTRay& ray, const Intersection& data) const;
+	//todo
+	CRTVector shadeGIExplicitLightSampling(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeReflective(const CRTRay& ray, const Intersection& data) const;
 	CRTVector shadeRefractive(const CRTRay& ray, const Intersection& data) const;
 

@@ -98,9 +98,7 @@ CRTImage CRTRaytracer::renderAcceleratedSinglethreaded() const
             }
         }
     }
-    if (scene->getSettings().FXAA) {
-        FXAA::applyFXAA(image);
-    }
+
     return image;
 }
 
@@ -181,7 +179,9 @@ void CRTRaytracer::renderRegionPixelGrid(int x, int y, int width, int height, CR
                     finalColor += shade(ray, rayTraceAccelerated(ray));
                 }
             }
-            for (int i = squareCount; i < scene->getSettings().raysPerPixel; i++) {
+            CRTRay ray = scene->getCamera().getRayForPixel(rowId, colId); // center ray 
+            finalColor += shade(ray, rayTraceAccelerated(ray));
+            for (int i = squareCount + 1; i < scene->getSettings().raysPerPixel; i++) {
                 // generate the rest using montecarlo
                 CRTRay ray = scene->getCamera().getRayForSubpixel(rowId + randFloat(), colId + randFloat());
                 finalColor += shade(ray, rayTraceAccelerated(ray));
@@ -330,7 +330,7 @@ CRTImage CRTRaytracer::renderSceneBarycentic() const
     Intersection intersection;
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            intersection = rayTraceAccelerated(scene->getCamera().getRayForPixel(rowId, colId));
+            intersection = rayTrace(scene->getCamera().getRayForPixel(rowId, colId));
             if (intersection.triangleIndex != NO_HIT_INDEX) {
                 image[rowId][colId] = intersection.barycentricCoordinates;
             }
@@ -465,12 +465,12 @@ CRTVector CRTRaytracer::shade(const CRTRay& ray, const Intersection& data) const
 CRTVector CRTRaytracer::shadeDiffuse(const CRTRay& ray, const Intersection& data) const {
     
     if (scene->getSettings().globalIllumination) {
-        return (shadeDirectIllumination(ray, data) + shadeGlobalIllumination(ray, data)) / (float)(GI_RAYS + 1);
+        return (shadeDiffuseSimple(ray, data) + shadeGlobalIllumination(ray, data)) / (float)(GI_RAYS + 1);
     }
-    return shadeDirectIllumination(ray, data);
+    return shadeDiffuseSimple(ray, data);
 }
 
-CRTVector CRTRaytracer::shadeDirectIllumination(const CRTRay& ray, const Intersection& data) const
+CRTVector CRTRaytracer::shadeDiffuseSimple(const CRTRay& ray, const Intersection& data) const
 {
     CRTVector finalColor{ 0.0, 0.0, 0.0 };
     CRTVector normalVector = data.faceNormal;
@@ -495,36 +495,36 @@ CRTVector CRTRaytracer::shadeDirectIllumination(const CRTRay& ray, const Interse
 
 CRTVector CRTRaytracer::shadeGlobalIllumination(const CRTRay& ray, const Intersection& data) const
 {
+    if (ray.depth == MAX_RAY_DEPTH - 1) {
+        return shadeDiffuseSimple(ray, data); // instead of spawning new rays, we return the simple color
+    }
     CRTVector diffuseReflections{ 0.0, 0.0, 0.0 };
     CRTVector normalVector = data.faceNormal;
     const CRTMaterial& material = scene->getMaterial(data.materialIndex);
     if (material.smoothShading) {
         normalVector = data.smoothNormal;
     }
-    CRTVector e1, e3;
-    e1 = cross(ray.direction, normalVector).normalize();
-    e3 = cross(e1, normalVector);
-    CRTMatrix localHit(e1, normalVector, e3);
+
     for (int i = 0; i < GI_RAYS; i++) {
-        CRTVector randomDirection = randomHemisphereSample(normalVector);
-        // Importance sampling towards light sources
-        CRTVector lightDirection = (scene->getRandomLight().getPosition() - data.hitPoint).normalize();
-        if (randFloat() < LIGHT_IMPORTANCE) {
-            randomDirection = ((1 - LIGHT_IMPORTANCE) * randomDirection + LIGHT_IMPORTANCE * lightDirection);
-        }
-        CRTRay diffuseReflectionRay{ data.hitPoint + (normalVector * REFLECTION_BIAS),
+        CRTVector e1, e3;
+        e1 = cross(ray.direction, normalVector).normalize();
+        e3 = cross(e1, normalVector);
+        CRTMatrix localHit(e1, normalVector, e3);
+
+        float randomXYAngle = PI * randFloat();
+        CRTVector randomDirection{ cos(randomXYAngle), sin(randomXYAngle), 0 };
+        float randomXZAngle = 360.0f * randFloat();
+        CRTMatrix rotationMatrix = yRotationMatrix(randomXZAngle);
+        randomDirection = randomDirection * rotationMatrix; // rotate the direction along the Y axis
+        randomDirection = randomDirection * localHit;       // convert the coordiantes to the local hit matrix
+        CRTRay diffuseReflectionRay{ data.hitPoint + (normalVector * REFLECTION_BIAS), 
             randomDirection,
-            RayType::REFLECTIVE,
-            ray.depth + 1
+            RayType::REFLECTIVE, 
+            ray.depth + 1 
         };
-        diffuseReflections += shade(diffuseReflectionRay, rayTraceAccelerated(diffuseReflectionRay)).clamp(0, 1);
+        diffuseReflections += shade(diffuseReflectionRay, rayTraceAccelerated(diffuseReflectionRay)).clamp(0,1);
     }
     return diffuseReflections;
-}
-
-// Linear interpolation between two vectors
-CRTVector lerp(const CRTVector& a, const CRTVector& b, float t) {
-    return a * (1 - t) + b * t;
 }
 
 CRTVector CRTRaytracer::shadeGIExplicitLightSampling(const CRTRay& ray, const Intersection& data) const
@@ -560,7 +560,7 @@ CRTVector CRTRaytracer::shadeReflective(const CRTRay& ray, const Intersection& d
     CRTVector reflectedDirection = reflect(ray.direction, normalVector);
     CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
 
-    return shade(reflectedRay, rayTraceAccelerated(reflectedRay))
+    return shade(reflectedRay, rayTrace(reflectedRay)) 
         * scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(scene->getMaterial(data.materialIndex), data);
 }
 
@@ -583,7 +583,7 @@ CRTVector CRTRaytracer::shadeRefractive(const CRTRay& ray, const Intersection& d
     if (sinIncomming > ((n2 * n2) / (n1 * n1))) { // total internal reflection
         CRTVector reflectedDirection = reflect(ray.direction, normalVector);
         CRTRay reflectedRay{ data.hitPoint + normalVector * REFLECTION_BIAS, reflectedDirection, RayType::REFLECTIVE, ray.depth + 1 };
-        return shade(reflectedRay, rayTraceAccelerated(reflectedRay));
+        return shade(reflectedRay, rayTrace(reflectedRay));
     }
 
     float sinOutcomming = (n1 / n2) * sqrt(std::max(0.0f, 1.0f - cosIncomming * cosIncomming));
@@ -604,6 +604,5 @@ CRTVector CRTRaytracer::shadeRefractive(const CRTRay& ray, const Intersection& d
     float R0 = pow((n1 - n2) / (n1 + n2), 2);
     float fresnel = R0 + (1 - R0) * pow(1.0f - cosIncomming, 5);
 
-    return fresnel * shade(reflectedRay, rayTraceAccelerated(reflectedRay)) 
-        + (1 - fresnel) * shade(refractedRay, rayTraceAccelerated(refractedRay));
+    return fresnel * shade(reflectedRay, rayTrace(reflectedRay)) + (1 - fresnel) * shade(refractedRay, rayTrace(refractedRay));
 }

@@ -19,14 +19,14 @@ struct CRTSettings
 	bool reflections = true;
 	bool refractions = true;
 
-	bool globalIllumination = true;
+	bool globalIllumination = false;
 
 	bool FXAA = false;
 
-	bool renderedAA = true;
-	int raysPerPixel = 16;
+	bool renderedAA = false;
+	int raysPerPixel = 100;
 
-	bool dof = false;
+	bool dof = true;
 	bool autoFocus = true;
 	float focalPlaneDist = -1;
 	int dofSamples = 32;

@@ -153,17 +153,6 @@ CRTVector reflect(const CRTVector& incomming, const CRTVector& surfaceNormal)
 
 CRTVector randomHemisphereSample(const CRTVector& normal)
 {
-	CRTVector vec = randomSphereSample();
-
-	/// restrict to the hemisphere: it is on the wrong side, just flip the result:
-	if (dot(vec, normal) < 0)
-		vec = -vec;
-
-	return vec;
-}
-
-CRTVector randomSphereSample()
-{
 	double u = randFloat();
 	double v = randFloat();
 
@@ -171,11 +160,17 @@ CRTVector randomSphereSample()
 	double cosPhi = 2 * v - 1;
 	double sinPhi = sqrt(1 - cosPhi * cosPhi);
 
-	return CRTVector(
+	CRTVector vec(
 		cos(theta) * sinPhi,
 		cosPhi,
 		sin(theta) * sinPhi
 	);
+
+	/// restrict to the hemisphere: it is on the wrong side, just flip the result:
+	if (dot(vec, normal) < 0)
+		vec = -vec;
+
+	return vec;
 }
 
 
