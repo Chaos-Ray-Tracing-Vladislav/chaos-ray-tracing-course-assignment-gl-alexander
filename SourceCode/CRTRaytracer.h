@@ -7,7 +7,7 @@
 
 //using CRTImage = std::vector<std::vector<CRTVector>>;
 
-constexpr int MAX_RAY_DEPTH = 5;
+constexpr int MAX_RAY_DEPTH = 4;
 constexpr float SHADOW_BIAS = 0.001f;
 constexpr float REFLECTION_BIAS = 0.001f;
 constexpr float REFRACTION_BIAS = 0.001f;

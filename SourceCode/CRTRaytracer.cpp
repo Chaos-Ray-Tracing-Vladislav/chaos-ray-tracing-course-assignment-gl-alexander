@@ -522,35 +522,6 @@ CRTVector CRTRaytracer::shadeGlobalIllumination(const CRTRay& ray, const Interse
     return diffuseReflections;
 }
 
-// Linear interpolation between two vectors
-CRTVector lerp(const CRTVector& a, const CRTVector& b, float t) {
-    return a * (1 - t) + b * t;
-}
-
-CRTVector CRTRaytracer::shadeGIExplicitLightSampling(const CRTRay& ray, const Intersection& data) const
-{
-    return CRTVector();
-    CRTVector normalVector = data.faceNormal;
-    const CRTMaterial& material = scene->getMaterial(data.materialIndex);
-    if (material.smoothShading) normalVector = data.smoothNormal;
-
-    // by default continue just 1 GI ray 
-    CRTRay diffuseReflectionRay{ data.hitPoint + (normalVector * REFLECTION_BIAS),
-        randomHemisphereSample(normalVector),
-        RayType::REFLECTIVE,
-        ray.depth + 1
-    };
-    //const CRTLight& randomLight = scene->getRandomLight();
-    //// TODO FIX: ::: :
-    //CRTRay lightSampleRay {
-    //    data.hitPoint + (normalVector * REFLECTION_BIAS),
-    //    
-    //    RayType::REFLECTIVE,
-    //    ray.depth + 1
-    //}
-    //diffuseReflections += shade(diffuseReflectionRay, rayTraceAccelerated(diffuseReflectionRay)).clamp(0, 1);
-}
-
 CRTVector CRTRaytracer::shadeReflective(const CRTRay& ray, const Intersection& data) const {
     CRTVector normalVector = data.faceNormal;
     const CRTMaterial& material = scene->getMaterial(data.materialIndex);
