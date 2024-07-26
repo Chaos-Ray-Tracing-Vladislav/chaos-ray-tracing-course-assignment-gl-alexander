@@ -287,5 +287,6 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	std::vector<CRTMaterial> materials = parseMaterials(doc, textures);
 	std::vector<CRTMesh> geometryObjects = parseObjects(doc, AABB);
 
+	camera.updateDirections();
 	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights, AABB);
 }

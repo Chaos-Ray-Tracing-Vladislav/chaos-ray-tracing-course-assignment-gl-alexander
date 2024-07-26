@@ -1,5 +1,6 @@
 #pragma once
 #include <vector>
+#include "CRTMesh.h"
 #include "../Utils/CRTVector.h"
 #include "../Utils/CRTMatrix.h"
 #include "../Utils/CRTRay.h"
@@ -9,19 +10,16 @@ static const float DEFAULT_FOV = 90;
 class CRTCamera
 {
 	CRTVector position;
-	CRTVector frontDirection;
-	CRTVector rightDirection;
-	CRTVector upDirection;
+	CRTVector frontDirection, rightDirection, upDirection;
 	CRTMatrix rotation;
-
+	CRTMesh imagePlane;
+	
 	unsigned imageWidth;
 	unsigned imageHeight;
-
 	float FOV;
 	float tanFOV;
 
 	CRTRay getRayForSubpixel(float rowId, float colId, const CRTVector& position) const;
-	void updateDirections();
 public:
 	CRTCamera();
 	CRTCamera(const CRTVector& position, float FOV = DEFAULT_FOV);
@@ -41,6 +39,7 @@ public:
 
 	CRTRay getRayForPixel(unsigned rowId, unsigned colId) const;
 	CRTRay getRayForSubpixel(float rowId, float colId) const;
+	std::pair<int, int> getRayHitpoint(const CRTRay& ray) const;
 
 	std::pair<CRTRay, CRTRay> getEyeRays(float rowId, float colId, float eyeDistance) const;
 
@@ -59,5 +58,7 @@ public:
 
 	unsigned getWidth() const;
 	unsigned getHeight() const;
+
+	void updateDirections();
 };
 

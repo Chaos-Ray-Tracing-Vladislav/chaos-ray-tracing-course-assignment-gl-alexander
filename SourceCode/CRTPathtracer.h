@@ -3,11 +3,23 @@
 
 constexpr float MIN_INTENSITY = 0.001f;
 
-struct PathVertex {
+struct PathVertex2 {
 	Intersection intersection;
 	CRTVector color;
 	float pdf;
 };
+
+struct PathVertex {
+	CRTVector point;
+	CRTVector normal;
+	CRTVector w_i;
+	CRTVector w_o;
+	CRTVector color;
+	float pdf;
+};
+
+constexpr int CAM_PATH_LENGHT = 5;
+constexpr int LIGHT_PATH_LENGHT = 5;
 
 class CRTPathtracer : public CRTRaytracer
 {
@@ -24,15 +36,15 @@ class CRTPathtracer : public CRTRaytracer
 		CRTRay& ray_out, CRTVector& color_out, float& probability) const;
 
 	bool connected(const CRTVector& a, const CRTVector& b) const;
-	bool refract(const CRTVector& incomming, CRTVector& normal, CRTVector& refracted, float ior) const;
 
 	std::vector<PathVertex> getLigthPath(const CRTLight& light) const;
-	std::vector<PathVertex> getPath(const CRTRay& ray) const;
+	std::vector<PathVertex> getCameraPath(const CRTRay& ray) const;
 
 	void renderRegion(int x, int y, int width, int height, CRTImage& output) const;
 
-	CRTVector computeColor(const CRTRay& cameraRay) const;
-	CRTVector directIllumination(const Intersection& data, const CRTLight& light) const;
+	// TODO: FIXXXX
+	CRTVector computeColor(const CRTRay& cameraRay, CRTImage& image) const;
+	CRTVector directIllumination(const PathVertex& data, const CRTLight& light) const;
 	CRTVector computePathColor(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const;
 public:
 	CRTPathtracer(CRTScene* scene);

@@ -54,6 +54,17 @@ CRTMatrix& CRTMatrix::operator-=(const CRTMatrix& other) {
 	return *this;
 }
 
+CRTMatrix CRTMatrix::transpose() const
+{
+	CRTMatrix transposed;
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			transposed.matrix[j][i] = this->matrix[i][j];
+		}
+	}
+	return transposed;
+}
+
 CRTMatrix operator*(const CRTMatrix& lhs, const CRTMatrix& rhs) {
 	CRTMatrix result;
 	for (int i = 0; i < MATRIX_ROWS; ++i) {

@@ -26,6 +26,8 @@ public:
 	friend CRTMatrix xRotationMatrix(float degrees);
 	friend CRTMatrix yRotationMatrix(float degrees);
 	friend CRTMatrix zRotationMatrix(float degrees);
+
+	CRTMatrix transpose() const;
 };
 
 

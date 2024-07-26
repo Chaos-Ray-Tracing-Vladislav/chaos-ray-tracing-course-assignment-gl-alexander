@@ -164,17 +164,14 @@ CRTVector randomHemisphereSample(const CRTVector& normal)
 
 CRTVector randomSphereSample()
 {
-	double u = randFloat();
-	double v = randFloat();
-
-	double theta = 2 * PI * u;
-	double cosPhi = 2 * v - 1;
+	double theta = 2 * PI * randFloat();
+	double cosPhi = 2 * randFloat() - 1;
 	double sinPhi = sqrt(1 - cosPhi * cosPhi);
 
 	return CRTVector(
 		cos(theta) * sinPhi,
-		cosPhi,
-		sin(theta) * sinPhi
+		sin(theta) * sinPhi,
+		cosPhi
 	);
 }
 

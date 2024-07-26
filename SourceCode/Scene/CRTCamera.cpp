@@ -17,9 +17,6 @@ CRTCamera::CRTCamera(const CRTVector& position, float FOV) : CRTCamera(position,
 
 CRTCamera::CRTCamera(const CRTVector& position, const CRTMatrix& rotation, float FOV) : position(position), rotation(rotation), FOV(FOV)
 {
-	frontDirection = FRONT * rotation;
-	upDirection = UP * rotation;
-	rightDirection = RIGHT * rotation;
 	tanFOV = tan((FOV / 2) * PI / 180.0);
 }
 
@@ -68,7 +65,6 @@ CRTRay CRTCamera::getRayForSubpixel(float rowId, float colId, const CRTVector& p
 	float y_coordinate = rowId;
 	float z_coordinate = 0;		// relative to the screen, its z is 0
 
-	// Algorithm from https://github.com/Chaos-Ray-Tracing-Vladislav/Homework/blob/main/HomeworkTasks/03%20Rays/CRT%20Homework%2003%20Rays.pdf
 	// Convert to NDC space
 	x_coordinate /= imageWidth;
 	y_coordinate /= imageHeight;
@@ -99,6 +95,16 @@ void CRTCamera::updateDirections()
 	frontDirection = FRONT * rotation;
 	upDirection = UP * rotation;
 	rightDirection = RIGHT * rotation;
+
+	CRTVector lowerLeftCorner = getRayForPixel(imageHeight - 1, 0).direction + position;
+	CRTVector lowerRightCorner = getRayForPixel(imageHeight - 1, imageWidth - 1).direction + position;
+	CRTVector upperRightCorner = getRayForPixel(0, imageWidth -1).direction + position;
+	CRTVector upperLeftCorner = getRayForPixel(0, 0).direction + position;
+
+	imagePlane = CRTMesh(
+		std::vector<CRTVector>({ lowerLeftCorner, lowerRightCorner, upperLeftCorner, upperRightCorner }),
+		std::vector<int>({ 0,1,2,1,3,2 }),
+		0);
 }
 
 CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
@@ -108,6 +114,18 @@ CRTRay CRTCamera::getRayForPixel(unsigned rowId, unsigned colId) const {
 CRTRay CRTCamera::getRayForSubpixel(float rowId, float colId) const
 {
 	return getRayForSubpixel(rowId, colId, this->position);
+}
+
+std::pair<int, int> CRTCamera::getRayHitpoint(const CRTRay& ray) const
+{
+	Intersection data = imagePlane.intersectsRay(ray);
+	if (data.triangleIndex == NO_HIT_INDEX) {
+		return { -1, -1 };
+	}
+	CRTVector uvCoords = imagePlane.getUV(data);
+	int pixelX = uvCoords.x * imageWidth;
+	int pixelY = (1 - uvCoords.y) * imageHeight;
+	return { pixelX, pixelY };
 }
 
 std::pair<CRTRay, CRTRay> CRTCamera::getEyeRays(float rowId, float colId, float eyeDistance) const

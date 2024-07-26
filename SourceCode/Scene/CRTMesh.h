@@ -20,6 +20,7 @@ class CRTMesh
 	void calculateVertexNormals();
 
 public:
+	CRTMesh() = default;
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<int>& triangleVertIndices, int materialIndex);
 	CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVector>& uvs, const std::vector<int>& triangleVertIndices, int materialIndex);
 
