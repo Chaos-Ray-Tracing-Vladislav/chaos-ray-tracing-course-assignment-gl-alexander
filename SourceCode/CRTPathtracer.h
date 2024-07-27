@@ -42,7 +42,6 @@ class CRTPathtracer : public CRTRaytracer
 
 	void renderRegion(int x, int y, int width, int height, CRTImage& output) const;
 
-	// TODO: FIXXXX
 	CRTVector computeColor(const CRTRay& cameraRay, CRTImage& image) const;
 	CRTVector directIllumination(const PathVertex& data, const CRTLight& light) const;
 	CRTVector computePathColor(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const;

@@ -205,11 +205,13 @@ std::vector<PathVertex> CRTPathtracer::getLigthPath(const CRTLight& light) const
 	vert.point = light.getPosition();
 	lightPath.push_back(vert);
 	int depth = 0;
+	float cosEmitting = 1.0f;
 	CRTVector randomDir = randomSphereSample();
 	CRTRay currRay{ light.getPosition(), randomDir, RayType::LIGHT, 0 };
 	while (depth < LIGHT_PATH_LENGHT) {
 		Intersection ix = rayTraceAccelerated(currRay);
 		if (ix.hitObjectIndex == INVALID_IND) return lightPath;
+		vert.normal = scene->getMaterial(ix.materialIndex).smoothShading ? ix.smoothNormal : ix.faceNormal;
 		vert.w_i = currRay.direction;
 		vert.point = ix.hitPoint;
 		currRay.depth++;
@@ -217,12 +219,15 @@ std::vector<PathVertex> CRTPathtracer::getLigthPath(const CRTLight& light) const
 		CRTVector color;
 		float probability;
 		spawnRay(ix, currRay.direction, currRay, color, probability);
-		vert.w_o = currRay.direction;
-		vert.color *= color;
 		if (probability <= 0) return lightPath;
+
+		vert.w_o = currRay.direction;
+		// color here can be precalculated, since we know for sure what the light path looks like
+		vert.color *= color * abs(dot(vert.w_i, vert.normal)) * cosEmitting / (ix.t * ix.t);
+		cosEmitting = abs(dot(vert.w_o, vert.normal));
 		if (scene->getMaterial(ix.materialIndex).type == CRTMaterialType::DIFFUSE)
 		{
-			vert.normal = scene->getMaterial(ix.materialIndex).smoothShading ? ix.smoothNormal : ix.faceNormal;
+			// we can only modify the diffuse hits with "randomness"
 			lightPath.push_back(vert);
 		}
 		depth++;
@@ -313,6 +318,7 @@ CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) 
 	for (int i = 0; i < cameraPath.size(); i++) {
 		for (auto& light : scene->getLights()) {
 			std::vector<PathVertex> lightPath = getLigthPath(light);
+			float mult = 1.0f / (cameraPath.size() * lightPath.size());
 			//finalColor += directIllumination(cameraPath[i], light);
 
 			for (int j = 1; j < lightPath.size(); j++) {
@@ -327,7 +333,7 @@ CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) 
 				if (ix.triangleIndex != NO_HIT_INDEX && ix.hitPoint == lightPath[j].point) {
 					cameraRay.type = RayType::SHADOW; // to avoid backface culling with image plane
 					auto pixelProjection = scene->getCamera().getRayHitpoint(cameraRay);
-					image[pixelProjection.second][pixelProjection.first] += lightPath[j].color;
+					image[pixelProjection.second][pixelProjection.first] += lightPath[j].color * mult;
 				}	
 			}
 		}
