@@ -98,11 +98,12 @@ void CRTCamera::updateDirections()
 
 	CRTVector lowerLeftCorner = getRayForPixel(imageHeight - 1, 0).direction + position;
 	CRTVector lowerRightCorner = getRayForPixel(imageHeight - 1, imageWidth - 1).direction + position;
-	CRTVector upperRightCorner = getRayForPixel(0, imageWidth -1).direction + position;
+	CRTVector upperRightCorner = getRayForPixel(0, imageWidth - 1).direction + position;
 	CRTVector upperLeftCorner = getRayForPixel(0, 0).direction + position;
 
 	imagePlane = CRTMesh(
 		std::vector<CRTVector>({ lowerLeftCorner, lowerRightCorner, upperLeftCorner, upperRightCorner }),
+		std::vector<CRTVector>({ CRTVector(0, 0, 0), CRTVector(1, 0, 0), CRTVector(0, 1, 0), CRTVector(1, 1, 0) }),
 		std::vector<int>({ 0,1,2,1,3,2 }),
 		0);
 }

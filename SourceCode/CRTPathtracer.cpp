@@ -317,15 +317,18 @@ CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) 
 
 			for (int j = 1; j < lightPath.size(); j++) {
 				//finalColor += computePathColor(cameraPath, i, lightPath, j);
-				CRTVector camDirection = (lightPath[j].point - scene->getCamera().getPosition());
+				CRTVector camDirection = (lightPath[j].point - scene->getCamera().getPosition()); // shoot from camera to have backface culling
 				float dist = camDirection.length();
 				camDirection.normalize();
-				CRTRay cameraProj{ lightPath[j].point, camDirection, RayType::LIGHT, 0 };
-				if (rayTraceAccelerated(cameraProj, dist).triangleIndex != NO_HIT_INDEX) {
-					auto pixelProjection = scene->getCamera().getRayHitpoint(cameraProj);
-					if (pixelProjection.first == -1) continue;
+
+				CRTRay cameraRay{scene->getCamera().getPosition(), camDirection, RayType::CAMERA, 0 };
+				Intersection ix = rayTraceAccelerated(cameraRay, dist);
+
+				if (ix.triangleIndex != NO_HIT_INDEX && ix.hitPoint == lightPath[j].point) {
+					cameraRay.type = RayType::SHADOW; // to avoid backface culling with image plane
+					auto pixelProjection = scene->getCamera().getRayHitpoint(cameraRay);
 					image[pixelProjection.second][pixelProjection.first] += lightPath[j].color;
-				}
+				}	
 			}
 		}
 	}

@@ -86,9 +86,9 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
 
 CRTVector CRTMesh::getUV(const Intersection& data) const
 {
-    unsigned v0_index = triangleVertIndices[data.triangleIndex + 0];
-    unsigned v1_index = triangleVertIndices[data.triangleIndex + 1];
-    unsigned v2_index = triangleVertIndices[data.triangleIndex + 2];
+    unsigned v0_index = triangleVertIndices[data.triangleIndex * VERTICES + 0];
+    unsigned v1_index = triangleVertIndices[data.triangleIndex * VERTICES + 1];
+    unsigned v2_index = triangleVertIndices[data.triangleIndex * VERTICES + 2];
     
     return uvs[v1_index] * data.barycentricCoordinates.x
         + uvs[v2_index] * data.barycentricCoordinates.y
