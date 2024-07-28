@@ -23,9 +23,8 @@ constexpr int LIGHT_PATH_LENGHT = 5;
 
 class CRTPathtracer : public CRTRaytracer
 {
+	std::vector<PathVertex> tracePath(const CRTRay& initialRay, int maxLen) const;
 
-	CRTVector pathTrace(const CRTRay& ray, const CRTVector& pathMultiplier) const;
-	void pathTrace(const CRTRay& ray, const CRTVector& pathMultiplier, std::vector<PathVertex>& path) const;
 	void spawnRay(const Intersection& data, const CRTVector& vec_in,
 		CRTRay& ray_out, CRTVector& color_out, float& probability) const;
 	void spawnDiffuseRay(const Intersection& data, const CRTVector& vec_in,
@@ -44,7 +43,8 @@ class CRTPathtracer : public CRTRaytracer
 
 	CRTVector computeColor(const CRTRay& cameraRay, CRTImage& image) const;
 	CRTVector directIllumination(const PathVertex& data, const CRTLight& light) const;
-	CRTVector computePathColor(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const;
+	void castToImagePlane(const std::vector<PathVertex>& lightPath, int lightNode, const CRTLight& light, CRTImage& image, float mult) const;
+	CRTVector connectVertices(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const;
 public:
 	CRTPathtracer(CRTScene* scene);
 
