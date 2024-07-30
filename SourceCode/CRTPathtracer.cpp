@@ -69,36 +69,33 @@ static float intensity(const CRTVector& color) {
 	return 0.21 * color.x + 0.72 * color.y + 0.07 * color.z;
 }
 
-CRTVector CRTPathtracer::pathTrace(const CRTRay& ray, const CRTVector& pathMultiplier) const
+std::vector<PathVertex> CRTPathtracer::tracePath(const CRTRay& initialRay, int maxLen) const
 {
-	if (intensity(pathMultiplier) < MIN_INTENSITY || ray.depth >= MAX_RAY_DEPTH) return CRTVector(0, 0, 0);
-	
-	Intersection ix = rayTraceAccelerated(ray);
-	if (ix.hitObjectIndex == INVALID_IND) return CRTVector(0, 0, 0);
-	CRTRay newRay;
-	CRTVector color;
-	float probability;
-	spawnRay(ix, ray.direction, newRay, color, probability);
-	if (probability <= 0) return CRTVector(0, 0, 0);
+	std::vector<PathVertex> path;
+	Intersection ix;
+	PathVertex vert;
+	int depth = 0;
+	CRTRay currRay = initialRay;
+	while (depth < maxLen) {
+		ix = rayTraceAccelerated(currRay);
+		if (ix.hitObjectIndex == INVALID_IND) return path;
+		vert.normal = scene->getMaterial(ix.materialIndex).smoothShading ? ix.smoothNormal : ix.faceNormal;
+		vert.w_i = currRay.direction;
+		vert.point = ix.hitPoint;
+		currRay.depth++;
 
-	return pathTrace(newRay, pathMultiplier * color / probability);
-}
+		spawnRay(ix, currRay.direction, currRay, vert.color, vert.pdf);
+		if (vert.pdf <= 0) return path;
 
-void CRTPathtracer::pathTrace(const CRTRay& ray, const CRTVector& pathMultiplier, std::vector<PathVertex>& path) const
-{
-	if (intensity(pathMultiplier) < MIN_INTENSITY || ray.depth >= MAX_RAY_DEPTH) return;
+		vert.w_o = currRay.direction;
+		if (scene->getMaterial(ix.materialIndex).type == CRTMaterialType::DIFFUSE)
+		{
+			path.push_back(vert);
+		}
+		depth++;
+	}
 
-	Intersection ix = rayTraceAccelerated(ray);
-	if (ix.hitObjectIndex == INVALID_IND) return;
-	CRTRay newRay;
-	newRay.depth = ray.depth + 1;
-	CRTVector color;
-	float probability;
-	spawnRay(ix, ray.direction, newRay, color, probability);
-	if (probability <= 0) return;
-	if (scene->getMaterial(ix.materialIndex).type == CRTMaterialType::DIFFUSE)
-		//path.emplace_back(ix, color, probability); // so we only check the diffuse materials in the path
-	pathTrace(newRay, pathMultiplier * color / probability, path);
+	return path;
 }
 
 void CRTPathtracer::spawnRay(const Intersection& data, const CRTVector& vec_in, CRTRay& ray_out, CRTVector& color_out, float& probability) const
@@ -129,7 +126,7 @@ void CRTPathtracer::spawnDiffuseRay(const Intersection& data, const CRTVector& v
 	ray_out.origin = data.hitPoint + normal * REFLECTION_BIAS;
 
 	CRTVector rawColor = scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(material, data);
-	color_out = rawColor * (1 / PI) * dot(ray_out.direction, normal);
+	color_out = rawColor * (1 / PI);
 	probability = 1 / (2 * PI);
 }
 
@@ -185,85 +182,27 @@ void CRTPathtracer::spawnRefractRay(const Intersection& data, const CRTVector& v
 		// the fresnel factors how much of the light is in reflection
 		ray_out.origin = data.hitPoint + normal * REFLECTION_BIAS;
 		ray_out.direction = reflect(vec_in, normal);
-		probability = fresnel;
 	}
 	else {
 		// 1 - fresnel determines how much of the light is refracted
 		ray_out.origin = data.hitPoint - normal * REFRACTION_BIAS;
 		ray_out.direction = refractedDirection;
-		probability = 1 - fresnel;
 	}
+	probability = 1;
 	color_out = scene->getGeometryObject(data.hitObjectIndex).sampleMaterial(material, data);
 }
 
 std::vector<PathVertex> CRTPathtracer::getLigthPath(const CRTLight& light) const
 {
-	std::vector<PathVertex> lightPath;
-	PathVertex vert;
-	// first vertex of path is the light source
-	vert.color = light.getIntensity() * CRTVector(1, 1, 1);
-	vert.point = light.getPosition();
-	lightPath.push_back(vert);
-	int depth = 0;
-	float cosEmitting = 1.0f;
+
 	CRTVector randomDir = randomSphereSample();
-	CRTRay currRay{ light.getPosition(), randomDir, RayType::LIGHT, 0 };
-	while (depth < LIGHT_PATH_LENGHT) {
-		Intersection ix = rayTraceAccelerated(currRay);
-		if (ix.hitObjectIndex == INVALID_IND) return lightPath;
-		vert.normal = scene->getMaterial(ix.materialIndex).smoothShading ? ix.smoothNormal : ix.faceNormal;
-		vert.w_i = currRay.direction;
-		vert.point = ix.hitPoint;
-		currRay.depth++;
-
-		CRTVector color;
-		float probability;
-		spawnRay(ix, currRay.direction, currRay, color, probability);
-		if (probability <= 0) return lightPath;
-
-		vert.w_o = currRay.direction;
-		// color here can be precalculated, since we know for sure what the light path looks like
-		vert.color *= color * abs(dot(vert.w_i, vert.normal)) * cosEmitting / (ix.t * ix.t);
-		cosEmitting = abs(dot(vert.w_o, vert.normal));
-		if (scene->getMaterial(ix.materialIndex).type == CRTMaterialType::DIFFUSE)
-		{
-			// we can only modify the diffuse hits with "randomness"
-			lightPath.push_back(vert);
-		}
-		depth++;
-	}
-
-	return lightPath;
+	CRTRay randomRay{ light.getPosition(), randomDir, RayType::LIGHT, 0 };
+	return tracePath(randomRay, LIGHT_PATH_LENGHT);
 }
 
 std::vector<PathVertex> CRTPathtracer::getCameraPath(const CRTRay& ray) const
 {
-	std::vector<PathVertex> path;
-	CRTRay currRay = ray;
-	int depth = 0;
-	PathVertex vert;
-	vert.color = CRTVector(1, 1, 1);
-	while (depth < CAM_PATH_LENGHT) {
-		Intersection ix = rayTraceAccelerated(currRay);
-		if (ix.hitObjectIndex == INVALID_IND) return path;
-		vert.w_i = currRay.direction;
-		vert.point = ix.hitPoint;
-		currRay.depth++;
-
-		CRTVector color;
-		float probability;
-		spawnRay(ix, currRay.direction, currRay, color, probability);
-		vert.w_o = currRay.direction;
-		vert.color = color;
-		if (probability <= 0) return path;
-		if (scene->getMaterial(ix.materialIndex).type == CRTMaterialType::DIFFUSE)
-		{
-			vert.normal = scene->getMaterial(ix.materialIndex).smoothShading ? ix.smoothNormal : ix.faceNormal;
-			path.push_back(vert); // so we only check the diffuse materials in the path
-		}
-		depth++;
-	}
-	return path;
+	return tracePath(ray, CAM_PATH_LENGHT);
 }
 
 bool CRTPathtracer::connected(const CRTVector& a, const CRTVector& b) const
@@ -277,67 +216,91 @@ bool CRTPathtracer::connected(const CRTVector& a, const CRTVector& b) const
 
 CRTVector CRTPathtracer::directIllumination(const PathVertex& data, const CRTLight& light) const
 {
+	if (!connected(data.point, light.getPosition()))
+		return CRTVector(0, 0, 0);
 	// slightly modified version of the shader for diffuse materials
 	CRTVector finalColor{ 0.0, 0.0, 0.0 };
 
 	CRTVector lightDirection = light.getPosition() - data.point;
-	float sphereRadius = lightDirection.length();
-	float sphereArea = 4 * PI * sphereRadius * sphereRadius;
+	float sphereRadius2 = lightDirection.length2();
 	lightDirection.normalize();
 	float cosLaw = std::max(0.0f, dot(lightDirection, data.normal));
-
-	if (connected(data.point, light.getPosition())) {
-		float lightIntensity = light.getIntensity() / sphereArea;
-		finalColor += data.color * lightIntensity * cosLaw / PI;
-	}
-	return finalColor.clamp(0, 1);
+	float lightIntensity = light.getIntensity() / sphereRadius2;
+	return data.color * lightIntensity * cosLaw;
 }
 
-CRTVector CRTPathtracer::computePathColor(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const
+void CRTPathtracer::castToImagePlane(const std::vector<PathVertex>& lightPath, int j, const CRTLight& light, CRTImage& image, float mult) const
+{
+	CRTVector camDirection = (lightPath[j].point - scene->getCamera().getPosition()); // shoot from camera to have backface culling
+	float dist = camDirection.length();
+	camDirection.normalize();
+
+	CRTRay cameraRay{ scene->getCamera().getPosition(), camDirection, RayType::CAMERA, 0 };
+	Intersection ix = rayTraceAccelerated(cameraRay, dist);
+
+	if (ix.triangleIndex != NO_HIT_INDEX && ix.hitPoint == lightPath[j].point) {
+		cameraRay.type = RayType::SHADOW; // to avoid backface culling with image plane
+		auto pixelProjection = scene->getCamera().getRayHitpoint(cameraRay);
+
+		float G = dot(lightPath[j].normal, camDirection) / (dist * dist);
+		G = abs(G);
+		CRTVector color = lightPath[j].color * G * light.getIntensity();
+		for (int i = j - 1; j >= 0; j--) {
+			color *= lightPath[j].color * abs(dot(lightPath[j].w_o, lightPath[j].normal)) / lightPath[j].pdf;
+		}
+
+		image[pixelProjection.second][pixelProjection.first] += color * mult / PI;
+	}
+}
+
+CRTVector CRTPathtracer::connectVertices(const std::vector<PathVertex>& cameraPath, int cameraNode, const std::vector<PathVertex>& lightPath, int lightNode) const
 {
 	if (!connected(cameraPath[cameraNode].point, lightPath[lightNode].point))
 		return CRTVector(0, 0, 0);
 	// connect the paths
 	CRTVector connection = (cameraPath[cameraNode].point - lightPath[lightNode].point);
-	float distance = connection.length();
+	float distance2 = connection.length2();
 	connection.normalize();
 
-	CRTVector C = cameraPath[cameraNode].color * lightPath[lightNode].color;
-	float G = dot(cameraPath[cameraNode].normal, connection) * dot(lightPath[lightNode].normal, connection) / (distance * distance);
+	float G = dot(cameraPath[cameraNode].normal, connection) * dot(lightPath[lightNode].normal, connection) / distance2;
 	
-	if (G < 0) G = -G;
+	G = abs(G);
 
-	return C * G;
+	CRTVector color(1, 1, 1);
+	for (int i = 0; i < cameraNode - 1; i++) {
+		color *= cameraPath[i].color * abs(dot(cameraPath[i].w_o, cameraPath[i].normal)) / cameraPath[i].pdf;
+	}
+
+	//connection 
+	color *= cameraPath[cameraNode].color * lightPath[lightNode].color * G;
+
+	for (int j = lightNode - 1; j >= 0; j--) {
+		color *= lightPath[j].color * abs(dot(lightPath[j].w_o, lightPath[j].normal)) / lightPath[j].pdf;
+	}
+
+	return color;
 }
 
 
 CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) const
 {
+	const CRTLight& lightSample = scene->getRandomLight();
+	float prob = 1 / scene->getLights().size();
+	std::vector<PathVertex> lightPath = getLigthPath(lightSample);
 	std::vector<PathVertex> cameraPath = getCameraPath(cameraRay);
-	CRTVector finalColor(0, 0, 0);
+
+	CRTVector directWeight(1, 1, 1);
+	float mult = 1.0f / (lightPath.size() + cameraPath.size() - 1);
+	CRTVector color(0, 0, 0);
 	for (int i = 0; i < cameraPath.size(); i++) {
-		for (auto& light : scene->getLights()) {
-			std::vector<PathVertex> lightPath = getLigthPath(light);
-			float mult = 1.0f / (cameraPath.size() * lightPath.size());
-			//finalColor += directIllumination(cameraPath[i], light);
+		color += directWeight * directIllumination(cameraPath[i], lightSample) / float(i + 1);
+		directWeight *= cameraPath[i].color * abs(dot(cameraPath[i].w_o, cameraPath[i].normal)) / cameraPath[i].pdf;
 
-			for (int j = 1; j < lightPath.size(); j++) {
-				//finalColor += computePathColor(cameraPath, i, lightPath, j);
-				CRTVector camDirection = (lightPath[j].point - scene->getCamera().getPosition()); // shoot from camera to have backface culling
-				float dist = camDirection.length();
-				camDirection.normalize();
-
-				CRTRay cameraRay{scene->getCamera().getPosition(), camDirection, RayType::CAMERA, 0 };
-				Intersection ix = rayTraceAccelerated(cameraRay, dist);
-
-				if (ix.triangleIndex != NO_HIT_INDEX && ix.hitPoint == lightPath[j].point) {
-					cameraRay.type = RayType::SHADOW; // to avoid backface culling with image plane
-					auto pixelProjection = scene->getCamera().getRayHitpoint(cameraRay);
-					image[pixelProjection.second][pixelProjection.first] += lightPath[j].color * mult;
-				}	
-			}
+		for (int j = 0; j < lightPath.size(); j++) {
+			color += connectVertices(cameraPath, i, lightPath, j) / float(i + j + 2);
+			castToImagePlane(lightPath, j, lightSample, image, mult);
 		}
 	}
 
-	return finalColor;
+	return color * mult;
 }
