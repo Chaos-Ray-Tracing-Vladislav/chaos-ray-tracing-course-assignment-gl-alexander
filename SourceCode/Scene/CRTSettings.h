@@ -24,7 +24,7 @@ struct CRTSettings
 	bool FXAA = false;
 
 	bool renderedAA = true;
-	int raysPerPixel = 16;
+	int raysPerPixel = 8;
 
 	bool dof = false;
 	bool autoFocus = true;

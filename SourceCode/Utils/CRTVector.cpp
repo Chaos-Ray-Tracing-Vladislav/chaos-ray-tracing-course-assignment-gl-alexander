@@ -15,6 +15,11 @@ float CRTVector::length() const {
 	return sqrt(x * x + y * y + z * z);
 }
 
+float CRTVector::length2() const
+{
+	return x * x + y * y + z * z;
+}
+
 CRTVector& CRTVector::normalize() {
 	float originalLength = length();
 	float multiplication = 1.0f / length();

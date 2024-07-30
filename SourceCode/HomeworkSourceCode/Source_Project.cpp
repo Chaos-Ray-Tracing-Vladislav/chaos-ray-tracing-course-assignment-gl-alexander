@@ -25,22 +25,21 @@ void GI_test(void) {
 }
 
 void GI_animation(void) {
-    CRTScene* scene = CRTSceneFactory::factory("Project/scene2.crtscene");
-	CRTRaytracer raytracer(scene);
-	CRTAnimation animation(scene->getCamera());
+	CRTScene* scene = CRTSceneFactory::factory("Project/scene2.crtscene");
+	CRTAnimation vertigoAnimation = CRTAnimation::vertigoAnimation(scene, 4, 6.62, 30);
+	CRTRaytracer raytracer(&vertigoAnimation);
 
-	renderer.renderAnimation("Images/Project/Animation/GI_vertigo",
-		animation.generateVertigoKeyframes(4, abs(-4.5 - scene->getCamera().getPosition().z), 30));
+	raytracer.renderAnimation("Images/Project/Animation/GI_vertigo");
 	delete scene;
 }
 
 void dragonAnimation(void) {
-    CRTScene* scene = CRTSceneFactory::factory("Homework14/scene1.crtscene");
-	CRTRaytracer raytracer(scene);
-	CRTAnimation animation(scene->getCamera());
+	CRTScene* scene = CRTSceneFactory::factory("Homework14/scene1.crtscene");
+	CRTVector sceneMiddle = (scene->getAABB().max + scene->getAABB().min) / 2;
+	CRTAnimation orbitAnimation = CRTAnimation::orbitAnimation(scene, sceneMiddle, 72, 5, false);
+	CRTRaytracer raytracer(&orbitAnimation);
 
-	renderer.renderAnimation("Images/Project/Animation/dragon_orbit", 
-		animation.generateVertigoKeyframes(4, abs(-4.5 - scene->getCamera().getPosition().z), 30));
+	raytracer.renderAnimation("Images/Project/Animation/dragon_orbit");
 	delete scene;
 }
 

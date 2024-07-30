@@ -8,6 +8,10 @@
 CRTRaytracer::CRTRaytracer(CRTScene* scene) : scene(scene)
 {}
 
+CRTRaytracer::CRTRaytracer(CRTAnimation* animation) : animation(animation)
+{
+}
+
 void CRTRaytracer::renderScene(const char* outputname) const
 {
     CRTImageSaver::saveImage(outputname, renderAccelerated());
@@ -104,12 +108,14 @@ CRTImage CRTRaytracer::renderAcceleratedSinglethreaded() const
     return image;
 }
 
-void CRTRaytracer::renderAnimation(const char* outputname, std::vector<CRTCamera> keyframes) const
+void CRTRaytracer::renderAnimation(const char* outputname)
 {
-    for (int i = 0; i < keyframes.size(); i++) {
+    if (animation == nullptr) return;
+
+    while (animation->hasNextKeyframe()) {
+        scene = animation->getNextKeyframe();
         char framename[128];
-        sprintf_s(framename, "%s_frame_%03d.ppm", outputname, i);
-        scene->setCamera(keyframes[i]);
+        sprintf_s(framename, "%s_frame_%03d.ppm", outputname, animation->getCurrentFrameIndex());
         renderScene(framename);
         std::cout << "Rendered " << framename << std::endl;
     }

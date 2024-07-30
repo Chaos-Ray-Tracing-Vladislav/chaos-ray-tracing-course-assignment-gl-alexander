@@ -1,6 +1,7 @@
 #pragma once
 #include "Utils/CRTVector.h"
 #include "Scene/CRTScene.h"
+#include "Scene/CRTAnimation.h"
 #include "Utils/CRTImageSaver.h"
 #include "Scene/CRTBucketArray.h"
 #include "Utils/FXAA.h"
@@ -21,6 +22,7 @@ class CRTRaytracer
 {
 protected: 
 	CRTScene* scene;
+	CRTAnimation* animation;
 
 	Intersection rayTrace(const CRTRay& ray) const;
 	Intersection rayTraceAccelerated(const CRTRay& ray, float maxDistance = FLOAT_MAX) const;
@@ -59,11 +61,12 @@ protected:
 	CRTImage renderWithAABB() const;
 public:
 	CRTRaytracer(CRTScene* scene);
+	CRTRaytracer(CRTAnimation* animation);
 
 	void renderScene(const char* outputname) const;
 	CRTImage renderAccelerated() const;
 
-	void renderAnimation(const char* outputname, std::vector<CRTCamera> keyframes) const;
+	void renderAnimation(const char* outputname);
 
 	// for testing purposes:
 	void renderSceneBarycentic(const char* outputname) const;

@@ -21,6 +21,7 @@ struct CRTVector {
 	CRTVector(const float pos[3]);
 	
 	float length() const;
+	float length2() const;
 	CRTVector& normalize();
 	CRTVector& clamp(float a, float b);
 
