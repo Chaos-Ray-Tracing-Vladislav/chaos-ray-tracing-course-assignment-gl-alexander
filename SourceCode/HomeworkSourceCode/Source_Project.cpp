@@ -1,5 +1,6 @@
 #pragma once
 #include "CRTRaytracer.h"
+#include "CRTPathtracer.h"
 #include "../Scene/CRTAnimation.h"
 #include "../Scene/CRTSceneFactory.h"
 #include <chrono>
@@ -18,9 +19,9 @@ CRTImage testAccelerated(CRTRaytracer& renderer) {
 
 void GI_test(void) {
     CRTScene* scene = CRTSceneFactory::factory("Project/scene2.crtscene");
-	CRTRaytracer raytracer(scene);
+	CRTPathtracer pathtracer(scene);
 
-	CRTImageSaver::saveImage("Images/Project/test.ppm", testAccelerated(raytracer));
+	CRTImageSaver::saveImage("Images/Project/pt_scene2.ppm", testAccelerated(raytracer));
 	delete scene;
 }
 

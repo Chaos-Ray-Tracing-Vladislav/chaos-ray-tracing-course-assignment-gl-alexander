@@ -3,12 +3,6 @@
 
 constexpr float MIN_INTENSITY = 0.001f;
 
-struct PathVertex2 {
-	Intersection intersection;
-	CRTVector color;
-	float pdf;
-};
-
 struct PathVertex {
 	CRTVector point;
 	CRTVector normal;

@@ -83,7 +83,7 @@ std::vector<PathVertex> CRTPathtracer::tracePath(const CRTRay& initialRay, int m
 		vert.w_i = currRay.direction;
 		vert.point = ix.hitPoint;
 		currRay.depth++;
-
+		// computes the PDF and BSDF
 		spawnRay(ix, currRay.direction, currRay, vert.color, vert.pdf);
 		if (vert.pdf <= 0) return path;
 
@@ -211,7 +211,9 @@ bool CRTPathtracer::connected(const CRTVector& a, const CRTVector& b) const
 	float len = dir.length();
 	dir.normalize();
 	CRTRay ray{ b, dir, RayType::SHADOW, 0 };
-	return rayTraceAccelerated(ray, len).triangleIndex != NO_HIT_INDEX;
+	Intersection ix = rayTraceAccelerated(ray, len);
+	// either we hit the point we're looking for or there's no other intersection
+	return (ix.hitPoint == a && ix.triangleIndex != NO_HIT_INDEX) || ix.triangleIndex == NO_HIT_INDEX;
 }
 
 CRTVector CRTPathtracer::directIllumination(const PathVertex& data, const CRTLight& light) const
@@ -248,8 +250,10 @@ void CRTPathtracer::castToImagePlane(const std::vector<PathVertex>& lightPath, i
 		for (int i = j - 1; j >= 0; j--) {
 			color *= lightPath[j].color * abs(dot(lightPath[j].w_o, lightPath[j].normal)) / lightPath[j].pdf;
 		}
-
-		image[pixelProjection.second][pixelProjection.first] += color * mult / PI;
+		
+		// if passing a refractive material we'd need to scale the color down by the inverse IOR squared
+		// currently not doing so to get brighter caustics :D 
+		image[pixelProjection.second][pixelProjection.first] += color * mult;
 	}
 }
 
@@ -262,12 +266,11 @@ CRTVector CRTPathtracer::connectVertices(const std::vector<PathVertex>& cameraPa
 	float distance2 = connection.length2();
 	connection.normalize();
 
-	float G = dot(cameraPath[cameraNode].normal, connection) * dot(lightPath[lightNode].normal, connection) / distance2;
-	
-	G = abs(G);
+	float G = abs(dot(cameraPath[cameraNode].normal, connection) * dot(lightPath[lightNode].normal, connection) / distance2);
 
 	CRTVector color(1, 1, 1);
 	for (int i = 0; i < cameraNode - 1; i++) {
+		// compute the previous vertices of the path so far
 		color *= cameraPath[i].color * abs(dot(cameraPath[i].w_o, cameraPath[i].normal)) / cameraPath[i].pdf;
 	}
 
@@ -275,6 +278,7 @@ CRTVector CRTPathtracer::connectVertices(const std::vector<PathVertex>& cameraPa
 	color *= cameraPath[cameraNode].color * lightPath[lightNode].color * G;
 
 	for (int j = lightNode - 1; j >= 0; j--) {
+		// compute the previous vertices of the light path
 		color *= lightPath[j].color * abs(dot(lightPath[j].w_o, lightPath[j].normal)) / lightPath[j].pdf;
 	}
 
@@ -285,7 +289,6 @@ CRTVector CRTPathtracer::connectVertices(const std::vector<PathVertex>& cameraPa
 CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) const
 {
 	const CRTLight& lightSample = scene->getRandomLight();
-	float prob = 1 / scene->getLights().size();
 	std::vector<PathVertex> lightPath = getLigthPath(lightSample);
 	std::vector<PathVertex> cameraPath = getCameraPath(cameraRay);
 
@@ -294,10 +297,11 @@ CRTVector CRTPathtracer::computeColor(const CRTRay& cameraRay, CRTImage& image) 
 	CRTVector color(0, 0, 0);
 	for (int i = 0; i < cameraPath.size(); i++) {
 		color += directWeight * directIllumination(cameraPath[i], lightSample) / float(i + 1);
+		// "connecting" with the next vertex in the camera path
 		directWeight *= cameraPath[i].color * abs(dot(cameraPath[i].w_o, cameraPath[i].normal)) / cameraPath[i].pdf;
 
 		for (int j = 0; j < lightPath.size(); j++) {
-			color += connectVertices(cameraPath, i, lightPath, j) / float(i + j + 2);
+			color += lightSample.getIntensity() * connectVertices(cameraPath, i, lightPath, j) / float(i + j + 2);
 			castToImagePlane(lightPath, j, lightSample, image, mult);
 		}
 	}
