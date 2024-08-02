@@ -1,6 +1,6 @@
 #include "BitmapTexture.h"
 #define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+#include "../../Dependencies/stb_image.h"
 #include <algorithm>
 
 BitmapTexture::BitmapTexture(const std::string& imagePath)

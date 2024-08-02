@@ -94,13 +94,29 @@ void CRTSceneFactory::parseSettings(const Document& doc, CRTSettings& settings, 
 				&& imageWidthVal.IsInt() && imageHeightVal.IsInt());
 			settings.imageSettings.width = imageWidthVal.GetInt();
 			settings.imageSettings.height = imageHeightVal.GetInt();
+			camera.setImageSettings(settings.imageSettings.width, settings.imageSettings.height);
 
 			const Value& imageBucketSize = imageSettingsVal.FindMember(crtSceneImageBucketSize)->value;
 			if (!imageBucketSize.IsNull() && imageBucketSize.IsInt()) {
 				settings.imageSettings.bucketSize = imageBucketSize.GetInt();
 			}
 
-			camera.setImageSettings(settings.imageSettings.width, settings.imageSettings.height);
+			const Value& reflectionsOnVal = settingsVal.FindMember(crtSceneReflectionsOn)->value;
+			if (!reflectionsOnVal.IsNull() && reflectionsOnVal.IsBool()) {
+				settings.reflections = reflectionsOnVal.GetBool();
+			}
+			const Value& refractionsOnVal = settingsVal.FindMember(crtSceneRefractionsOn)->value;
+			if (!refractionsOnVal.IsNull() && refractionsOnVal.IsBool()) {
+				settings.refractions = refractionsOnVal.GetBool();
+			}
+			const Value& globalIlluminationVal = settingsVal.FindMember(crtSceneGIOn)->value;
+			if (!globalIlluminationVal.IsNull() && globalIlluminationVal.IsBool()) {
+				settings.globalIllumination = globalIlluminationVal.GetBool();
+			}
+			const Value& fxaaVal = settingsVal.FindMember(crtSceneFXAAOn)->value;
+			if (!fxaaVal.IsNull() && fxaaVal.IsBool()) {
+				settings.FXAA = fxaaVal.GetBool();
+			}
 		}
 
 		const Value& cameraVal = doc.FindMember(crtSceneCamera)->value;
@@ -271,5 +287,6 @@ CRTScene* CRTSceneFactory::factory(const char* filename)
 	std::vector<CRTMaterial> materials = parseMaterials(doc, textures);
 	std::vector<CRTMesh> geometryObjects = parseObjects(doc, AABB);
 
+	camera.updateDirections();
 	return new CRTScene(camera, settings, geometryObjects, materials, textures, lights, AABB);
 }

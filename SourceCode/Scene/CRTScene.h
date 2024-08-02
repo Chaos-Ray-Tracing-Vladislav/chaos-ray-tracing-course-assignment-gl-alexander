@@ -37,7 +37,9 @@ public:
 	int getObjectsCount() const;
 
 	const CRTCamera& getCamera() const;
+	void setCamera(const CRTCamera& camera);
 	const CRTSettings& getSettings() const;
 	const std::vector<CRTLight>& getLights() const;
+	const CRTLight& getRandomLight() const;
 	const CRTBox& getAABB() const;
 };

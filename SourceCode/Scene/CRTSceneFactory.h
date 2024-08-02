@@ -2,8 +2,8 @@
 #include <fstream>
 #include "CRTScene.h"
 #include "Textures/CRTTextureFactory.h"
-#include "rapidjson/document.h"
-#include "rapidjson/istreamwrapper.h"
+#include "../Dependencies/rapidjson/document.h"
+#include "../Dependencies/rapidjson/istreamwrapper.h"
 
 using TextureMap = std::unordered_map<std::string, std::shared_ptr<Texture>>;
 
@@ -32,6 +32,10 @@ public:
 static const char* crtSceneSettings = "settings";
 static const char* crtSceneVersion = "version";
 static const char* crtSceneBGColor = "background_color";
+static const char* crtSceneReflectionsOn = "reflections_on";
+static const char* crtSceneRefractionsOn = "refractions_on";
+static const char* crtSceneGIOn = "gi_on";
+static const char* crtSceneFXAAOn = "fxaa_on";
 static const char* crtSceneImageSettings = "image_settings";
 static const char* crtSceneImageWidth = "width";
 static const char* crtSceneImageHeight = "height";

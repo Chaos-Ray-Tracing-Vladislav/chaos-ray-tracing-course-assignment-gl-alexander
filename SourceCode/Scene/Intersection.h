@@ -1,6 +1,5 @@
 #pragma once
 #include "../Utils/CRTVector.h"
-#include "CRTMaterial.h"
 
 const int NO_HIT_INDEX = -1;
 

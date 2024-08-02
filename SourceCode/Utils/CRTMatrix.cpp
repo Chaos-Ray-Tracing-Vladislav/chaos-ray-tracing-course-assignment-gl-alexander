@@ -1,14 +1,28 @@
 #include "CRTMatrix.h"
 #include <cmath>
 
-const float PI = 3.1415;
-
 CRTMatrix::CRTMatrix(const float matrix[MATRIX_ROWS][MATRIX_COLUMNS]) {
 	for (int i = 0; i < MATRIX_ROWS; i++) {
 		for (int j = 0; j < MATRIX_COLUMNS; j++) {
 			this->matrix[i][j] = matrix[i][j];
 		}
 	}
+}
+
+CRTMatrix::CRTMatrix(CRTVector e[MATRIX_ROWS])
+{
+	for (int i = 0; i < MATRIX_ROWS; i++) {
+		matrix[i][0] = e[i].x;
+		matrix[i][1] = e[i].y;
+		matrix[i][2] = e[i].z;
+	}
+}
+
+CRTMatrix::CRTMatrix(const CRTVector& e1, const CRTVector& e2, const CRTVector& e3)
+{
+	matrix[0][0] = e1.x; matrix[0][1] = e2.x; matrix[0][2] = e3.x;
+	matrix[1][0] = e1.y; matrix[1][1] = e2.y; matrix[1][2] = e3.y;
+	matrix[2][0] = e1.z; matrix[2][1] = e2.z; matrix[2][2] = e3.z;
 }
 
 CRTMatrix::CRTMatrix() {
@@ -38,6 +52,17 @@ CRTMatrix& CRTMatrix::operator-=(const CRTMatrix& other) {
 		}
 	}
 	return *this;
+}
+
+CRTMatrix CRTMatrix::transpose() const
+{
+	CRTMatrix transposed;
+	for (int i = 0; i < 3; ++i) {
+		for (int j = 0; j < 3; ++j) {
+			transposed.matrix[j][i] = this->matrix[i][j];
+		}
+	}
+	return transposed;
 }
 
 CRTMatrix operator*(const CRTMatrix& lhs, const CRTMatrix& rhs) {

@@ -47,9 +47,9 @@ CRTMesh::CRTMesh(const std::vector<CRTVector>& vertices, const std::vector<CRTVe
 }
 
 CRTVector CRTMesh::calculateSmoothNormal(int triangleIndex, const CRTVector& barycentic, const CRTVector& point) const {
-    CRTVector v0_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex + 0]];
-    CRTVector v1_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex + 1]];
-    CRTVector v2_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex + 2]];
+    CRTVector v0_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex * VERTICES + 0]];
+    CRTVector v1_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex * VERTICES + 1]];
+    CRTVector v2_VertexNormal = vertexNormals[triangleVertIndices[triangleIndex * VERTICES + 2]];
 
     // calculate the normal based on the barycentic coordinates {u, v, w} using the formula
     return (v0_VertexNormal * barycentic.z
@@ -70,7 +70,7 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
             if (triangle_intersection.t < closestHitDitance) {
                 closestHitDitance = triangle_intersection.t;
                 intersection = std::move(triangle_intersection); // this copies all the data we've already calculated
-                intersection.triangleIndex = i;
+                intersection.triangleIndex = i / VERTICES;
             }
         }
     }
@@ -86,9 +86,9 @@ Intersection CRTMesh::intersectsRay(const CRTRay& ray) const
 
 CRTVector CRTMesh::getUV(const Intersection& data) const
 {
-    unsigned v0_index = triangleVertIndices[data.triangleIndex + 0];
-    unsigned v1_index = triangleVertIndices[data.triangleIndex + 1];
-    unsigned v2_index = triangleVertIndices[data.triangleIndex + 2];
+    unsigned v0_index = triangleVertIndices[data.triangleIndex * VERTICES + 0];
+    unsigned v1_index = triangleVertIndices[data.triangleIndex * VERTICES + 1];
+    unsigned v2_index = triangleVertIndices[data.triangleIndex * VERTICES + 2];
     
     return uvs[v1_index] * data.barycentricCoordinates.x
         + uvs[v2_index] * data.barycentricCoordinates.y

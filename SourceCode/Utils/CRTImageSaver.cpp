@@ -7,8 +7,7 @@ std::ofstream& operator<<(std::ofstream& ppm, const CRTColor& pixel) {
     return ppm;
 }
 
-
-void CRTImageSaver::saveImage(const char* imgName, const CRTImage& image) {
+void CRTImageSaver::saveImage(const char* imgName, const CRTImage& image, bool FXAA) {
     std::ofstream ppmFileStream(imgName, std::ios::out | std::ios::trunc);
     ppmFileStream << "P3" << LINE_SEP;
     unsigned imageHeight = image.size();
@@ -16,17 +15,19 @@ void CRTImageSaver::saveImage(const char* imgName, const CRTImage& image) {
     ppmFileStream << imageWidth << " " << imageHeight << LINE_SEP;
     ppmFileStream << MAX_COLOR_COMPONENT << LINE_SEP;
 
-    saveImage(ppmFileStream, image);
+    saveImage(ppmFileStream, image, FXAA);
 
     ppmFileStream.close();
 }
 
-void CRTImageSaver::saveImage(std::ofstream& ppm, const CRTImage& image) {
+void CRTImageSaver::saveImage(std::ofstream& ppm, const CRTImage& image, bool FXAA) {
     unsigned imageHeight = image.size();
     unsigned imageWidth = image[0].size();
     for (int rowId = 0; rowId < imageHeight; rowId++) {
         for (int colId = 0; colId < imageWidth; colId++) {
-            ppm << (image[rowId][colId] * MAX_COLOR_COMPONENT);
+            CRTVector finalColor = image[rowId][colId] * MAX_COLOR_COMPONENT;
+            ppm << finalColor;
+
             if (colId != imageWidth) {
                 ppm << PIXEL_SEP;
             }
