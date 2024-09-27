@@ -13,7 +13,7 @@ A CPU ray tracer, part of the Chaos Ray Tracing course with added functionalitie
 ### Added functionalities
 <img src="https://github.com/Chaos-Ray-Tracing-Vladislav/chaos-ray-tracing-course-assignment-gl-alexander/blob/main/Images/Project/Animations/GI_random_sampling.gif" alt="Global Illumination"/> <br>
 - Path Tracing with explicit light sampling: ray path continues on non-specular hits (global illumination). Rays are "guided" towards a light source.
-- Anti=aliasing: [FXAA](https://en.wikipedia.org/wiki/Fast_approximate_anti-aliasing) implementation, Rendered AA (option for rays per pixel)
+- Anti-aliasing: [FXAA](https://en.wikipedia.org/wiki/Fast_approximate_anti-aliasing) implementation, Rendered AA (option for rays per pixel)
 - Animations module: separates mesh-manipulating animations from camera movement (to preserve KD Tree building). Supports orbit animation, as well as [Vertigo effect](https://en.wikipedia.org/wiki/Dolly_zoom) 
 - Depth of Field: simulates the physical attributes of a real camera (e.g. aperature and focus distance)
 - [Stereoscopic effect](https://en.wikipedia.org/wiki/Stereoscopy): simulates the depth and 3D effects of human eyesight by creating two pictures for each eye. The pictures are then combined into a single one using the [anaglyphic effect](https://en.wikipedia.org/wiki/Anaglyph_3D)
